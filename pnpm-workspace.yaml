@@ -1,0 +1,17 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+allowBuilds:
+  '@scarf/scarf': true
+  core-js-pure: true
+  fast-folder-size: true
+  sqlite3: true
+  unrs-resolver: true
+
+onlyBuiltDependencies:
+  - '@scarf/scarf'
+  - 'core-js-pure'
+  - 'fast-folder-size'
+  - 'sqlite3'
+  - 'unrs-resolver'

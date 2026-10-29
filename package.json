@@ -1,0 +1,14 @@
+{
+  "name": "musicbot-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm --filter \"@musicbot/*\" run build",
+    "type:check": "pnpm --filter \"@musicbot/*\" run type:check",
+    "dev:bot": "pnpm --filter \"@musicbot/bot\" dev",
+    "dev:web": "pnpm --filter \"@musicbot/web\" dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

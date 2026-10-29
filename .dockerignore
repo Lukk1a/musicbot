@@ -1,0 +1,13 @@
+# .dockerignore
+**/node_modules
+**/.next
+**/build
+**/dist
+**/.git
+**/.pnpm-store
+*.log
+.env
+.env.local
+.env.*.local
+*.sqlite
+*.sqlite-journal

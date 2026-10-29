@@ -1,0 +1,72 @@
+# docker-compose.yml
+services:
+  # 1. Discord Bot + Internal Koa API + Socket.io Server
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    container_name: musicbot-bot
+    restart: unless-stopped
+    env_file:
+      - apps/bot/.env
+    volumes:
+      - ./data/bot:/app/apps/bot/database
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - musicbot-net
+
+  # 2. Next.js 15 Live Web Dashboard
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: musicbot-web
+    restart: unless-stopped
+    env_file:
+      - apps/web/.env
+    environment:
+      - INTERNAL_BOT_API_URL=http://bot:4000
+      - NEXT_PUBLIC_BOT_SOCKET_URL=https://play.lukka.dev
+      - NEXTAUTH_URL=https://play.lukka.dev
+    expose:
+      - "3000"
+    depends_on:
+      - bot
+    networks:
+      - musicbot-net
+
+  # 3. High-Performance Reverse Proxy (Unified gateway for Next.js & WebSockets)
+  gateway:
+    image: nginx:alpine
+    container_name: musicbot-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - bot
+    networks:
+      - musicbot-net
+
+  # 4. Optional Containerized Cloudflare Tunnel
+  # (Use this if you prefer containerized tunnel instead of host cloudflared service)
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: musicbot-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN:-}
+    depends_on:
+      - gateway
+    networks:
+      - musicbot-net
+    profiles:
+      - with-tunnel
+
+networks:
+  musicbot-net:
+    driver: bridge
