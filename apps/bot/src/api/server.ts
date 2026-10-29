@@ -1,7 +1,7 @@
 // apps/bot/src/api/server.ts
 import '@tsed/swagger'
 
-import type { Server as HttpServer } from 'node:http'
+import Http, { type Server as HttpServer } from 'node:http'
 import { CreateRequestContext, MikroORM } from '@mikro-orm/core'
 import { Inject, PlatformAcceptMimesMiddleware, PlatformApplication } from '@tsed/common'
 import { PlatformExpress } from '@tsed/platform-express'
@@ -62,10 +62,12 @@ export class Server {
 		})
 
 		platform.listen().then(async () => {
-			const rawHttpServer = (platform as unknown as { httpServer?: HttpServer }).httpServer
+			const rawHttpServer = platform.injector.get<HttpServer>(Http.Server) ?? (platform as unknown as { httpServer?: HttpServer }).httpServer
 			if (rawHttpServer) {
 				const socketService = await resolveDependency(SocketService)
 				socketService.init(rawHttpServer)
+			} else {
+				console.warn('[Server] Could not obtain raw HTTP server from Ts.ED platform.')
 			}
 			this.store.update('ready', e => ({ ...e, api: true }))
 		})
