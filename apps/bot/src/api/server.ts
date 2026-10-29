@@ -3,6 +3,7 @@ import '@tsed/swagger'
 
 import Http, { type Server as HttpServer } from 'node:http'
 import { CreateRequestContext, MikroORM } from '@mikro-orm/core'
+import { Configuration } from '@tsed/di'
 import { Inject, PlatformAcceptMimesMiddleware, PlatformApplication } from '@tsed/common'
 import { PlatformExpress } from '@tsed/platform-express'
 import bodyParser from 'body-parser'
@@ -14,6 +15,7 @@ import { env } from '@/env'
 import { Database, PluginsManager, SocketService, Store } from '@/services'
 import { resolveDependency } from '@/utils/functions'
 
+@Configuration({})
 @Service()
 export class Server {
 
