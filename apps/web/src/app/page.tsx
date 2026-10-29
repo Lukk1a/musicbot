@@ -1,15 +1,22 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import { Music, Disc3, Radio, Shield, Sparkles } from 'lucide-react'
+import { Disc3, Radio, Shield, Sparkles } from 'lucide-react'
 
 import { authOptions } from '@/lib/auth'
+import { LoginButton } from '@/components/LoginButton'
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string }>
+}) {
   const session = await getServerSession(authOptions)
   if (session) {
     redirect('/dashboard')
   }
+
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const error = resolvedSearchParams?.error
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 text-center relative overflow-hidden">
@@ -38,14 +45,16 @@ export default async function HomePage() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center mt-2">
-          <Link
-            href="/api/auth/signin/discord"
-            className="flex items-center gap-3 px-8 py-3.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95"
-          >
-            <Music className="w-5 h-5" />
-            <span>Connect with Discord</span>
-          </Link>
+          <LoginButton />
         </div>
+
+        {error && (
+          <div className="p-3 px-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm max-w-md">
+            {error === 'AccessDenied'
+              ? 'Access denied. You cancelled the Discord authorization.'
+              : `Authentication error (${error}). Ensure https://play.lukka.dev/api/auth/callback/discord is added to Redirects in your Discord Developer Portal.`}
+          </div>
+        )}
 
         {/* Feature badges */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mt-12 text-left">
