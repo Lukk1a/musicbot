@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import type { GuildPlayerState } from '@musicbot/shared'
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_BOT_SOCKET_URL || 'http://localhost:4000'
+const SOCKET_URL = process.env.NEXT_PUBLIC_BOT_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000')
 
 const defaultState = (guildId: string): GuildPlayerState => ({
   guildId,

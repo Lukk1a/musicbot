@@ -236,6 +236,15 @@ async function init() {
 						const imagesUpload = await resolveDependency(ImagesUpload)
 						await imagesUpload.syncWithDatabase()
 					}
+
+					// Pre-initialize MusicService and audio extractors
+					try {
+						const { MusicService } = await import('@/services/Music')
+						const musicService = await resolveDependency(MusicService)
+						await musicService.initialize()
+					} catch (musicErr) {
+						logger.console(`[MusicService] Initialization warning: ${musicErr}`, 'warn')
+					}
 				})
 				.catch((err) => {
 					logger.console(`Discord login error: ${err.message}`, 'error')

@@ -170,16 +170,20 @@ export class MusicService {
 				}
 			}
 
-			const userVoiceChannel = member.voice.channel
+			const voiceState = guild.voiceStates.cache.get(userId) ?? member.voice
+			const userVoiceChannelId = voiceState?.channelId
+			const userVoiceChannel = (voiceState?.channel ?? (userVoiceChannelId ? await guild.channels.fetch(userVoiceChannelId).catch(() => null) : null)) as VoiceBasedChannel | null
+
 			if (!userVoiceChannel) {
 				return {
 					authorized: false,
-					error: 'You must be connected to an active voice channel.',
+					error: 'You must be connected to an active voice channel in this server to control playback.',
 				}
 			}
 
 			const botMember = guild.members.me ?? (client.user ? await guild.members.fetch(client.user.id).catch(() => null) : null)
-			const botVoiceChannel = botMember?.voice.channel ?? null
+			const botVoiceState = (client.user ? guild.voiceStates.cache.get(client.user.id) : null) ?? botMember?.voice
+			const botVoiceChannel = (botVoiceState?.channel ?? (botVoiceState?.channelId ? await guild.channels.fetch(botVoiceState.channelId).catch(() => null) : null)) as VoiceBasedChannel | null
 
 			// If the bot is already active in a channel, verify same-channel or DJ permissions
 			if (botVoiceChannel && botVoiceChannel.id !== userVoiceChannel.id) {
@@ -253,7 +257,9 @@ export class MusicService {
 					console.warn(`[MusicService] Could not retrieve GuildMusicConfig for ${guildId}:`, err)
 				}
 
-				await player.play(auth.voiceChannel, action.query, {
+				console.log(`[MusicService] Playing "${action.query}" in guild ${guildId} (channel: ${auth.voiceChannel.name})...`)
+
+				const playResult = await player.play(auth.voiceChannel, action.query, {
 					nodeOptions: {
 						metadata: {
 							voiceChannel: auth.voiceChannel,
@@ -267,6 +273,8 @@ export class MusicService {
 					},
 					requestedBy: auth.member.user,
 				})
+
+				console.log(`[MusicService] Successfully queued: "${playResult.track.title}"`)
 				break
 			}
 

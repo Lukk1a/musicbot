@@ -6,7 +6,7 @@ import { Client } from 'discordx'
 import { Authenticated, BotOnline } from '@/api/middlewares'
 import { MusicService } from '@/services/Music'
 import { BaseController } from '@/utils/classes'
-import { resolveDependencies } from '@/utils/functions'
+import { resolveDependencies, resolveDependency } from '@/utils/functions'
 import type { GuildPlayerState, MutualGuildStatus, PlayerControlAction } from '@musicbot/shared'
 
 @Controller('/music')
@@ -27,6 +27,21 @@ export class MusicController extends BaseController {
 		})
 	}
 
+	private async getMusicService(): Promise<MusicService> {
+		if (!this.musicService) {
+			const { MusicService } = await import('@/services/Music')
+			this.musicService = await resolveDependency(MusicService)
+		}
+		return this.musicService
+	}
+
+	private async getClient(): Promise<Client> {
+		if (!this.client) {
+			this.client = await resolveDependency(Client)
+		}
+		return this.client
+	}
+
 	@Get('/:guildId/state')
 	async getState(
 		@PathParams('guildId') guildId: string
@@ -34,7 +49,8 @@ export class MusicController extends BaseController {
 		if (!guildId)
 			throw new BadRequest('Guild ID is required.')
 
-		return this.musicService.getSerializedState(guildId)
+		const musicService = await this.getMusicService()
+		return musicService.getSerializedState(guildId)
 	}
 
 	@Post('/:guildId/control')
@@ -42,21 +58,26 @@ export class MusicController extends BaseController {
 		@PathParams('guildId') guildId: string,
 		@BodyParams() body: PlayerControlAction
 	): Promise<GuildPlayerState> {
+		console.log('[MusicController] POST control received, guildId:', guildId, 'body:', body)
 		if (!guildId)
 			throw new BadRequest('Guild ID is required.')
 
 		if (!body || !body.action || !body.userId)
 			throw new BadRequest('Invalid control action payload: action and userId are required.')
 
-		const auth = await this.musicService.verifyMemberVoice(guildId, body.userId)
-		if (!auth.authorized)
+		const musicService = await this.getMusicService()
+		const auth = await musicService.verifyMemberVoice(guildId, body.userId)
+		if (!auth.authorized) {
+			console.warn(`[MusicController] Voice check failed for user ${body.userId} in guild ${guildId}: ${auth.error}`)
 			throw new Forbidden(auth.error || 'Voice channel security check failed.')
+		}
 
 		try {
-			return await this.musicService.executeAction(guildId, body)
+			return await musicService.executeAction(guildId, body)
 		}
 		catch (error) {
 			const message = error instanceof Error ? error.message : 'Action execution failed.'
+			console.error(`[MusicController] executeAction error for guild ${guildId}:`, error)
 			throw new BadRequest(message)
 		}
 	}
@@ -65,7 +86,9 @@ export class MusicController extends BaseController {
 	async getMutualGuilds(
 		@QueryParams('guildIds') guildIdsQuery?: string
 	): Promise<MutualGuildStatus[]> {
-		if (!this.client || !this.client.user)
+		const client = await this.getClient()
+		const musicService = await this.getMusicService()
+		if (!client || !client.user)
 			return []
 
 		const userGuildIds = (guildIdsQuery || '')
@@ -76,9 +99,9 @@ export class MusicController extends BaseController {
 		const mutualList: MutualGuildStatus[] = []
 
 		for (const gId of userGuildIds) {
-			const botGuild = this.client.guilds.cache.get(gId)
+			const botGuild = client.guilds.cache.get(gId)
 			if (botGuild) {
-				const state = this.musicService.getSerializedState(gId)
+				const state = musicService.getSerializedState(gId)
 				mutualList.push({
 					id: botGuild.id,
 					name: botGuild.name,

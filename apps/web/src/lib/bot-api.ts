@@ -36,8 +36,15 @@ export async function sendPlayerControlAction(
   })
 
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(errorBody.message || `Action failed (HTTP ${res.status})`)
+    const rawText = await res.text().catch(() => '')
+    let errorMsg = res.statusText
+    try {
+      const parsed = JSON.parse(rawText)
+      errorMsg = parsed.message || parsed.error || errorMsg
+    } catch {
+      if (rawText) errorMsg = rawText
+    }
+    throw new Error(errorMsg)
   }
 
   return res.json()
