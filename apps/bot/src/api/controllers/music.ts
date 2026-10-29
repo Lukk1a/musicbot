@@ -1,5 +1,5 @@
 // apps/bot/src/api/controllers/music.ts
-import { BodyParams, Controller, Get, PathParams, Post, QueryParams, UseBefore } from '@tsed/common'
+import { BodyParams, Controller, Get, PathParams, Post, QueryParams, Req, UseBefore } from '@tsed/common'
 import { BadRequest, Forbidden, NotFound } from '@tsed/exceptions'
 import { Client } from 'discordx'
 
@@ -56,24 +56,26 @@ export class MusicController extends BaseController {
 	@Post('/:guildId/control')
 	async control(
 		@PathParams('guildId') guildId: string,
-		@BodyParams() body: PlayerControlAction
+		@BodyParams() body: any,
+		@Req() req: any
 	): Promise<GuildPlayerState> {
-		console.log('[MusicController] POST control received, guildId:', guildId, 'body:', body)
+		const actionPayload = (req?.body && Object.keys(req.body).length > 0) ? req.body : body
+		console.log('[MusicController] POST control received, guildId:', guildId, 'payload:', actionPayload)
 		if (!guildId)
 			throw new BadRequest('Guild ID is required.')
 
-		if (!body || !body.action || !body.userId)
+		if (!actionPayload || !actionPayload.action || !actionPayload.userId)
 			throw new BadRequest('Invalid control action payload: action and userId are required.')
 
 		const musicService = await this.getMusicService()
-		const auth = await musicService.verifyMemberVoice(guildId, body.userId)
+		const auth = await musicService.verifyMemberVoice(guildId, actionPayload.userId)
 		if (!auth.authorized) {
-			console.warn(`[MusicController] Voice check failed for user ${body.userId} in guild ${guildId}: ${auth.error}`)
+			console.warn(`[MusicController] Voice check failed for user ${actionPayload.userId} in guild ${guildId}: ${auth.error}`)
 			throw new Forbidden(auth.error || 'Voice channel security check failed.')
 		}
 
 		try {
-			return await musicService.executeAction(guildId, body)
+			return await musicService.executeAction(guildId, actionPayload)
 		}
 		catch (error) {
 			const message = error instanceof Error ? error.message : 'Action execution failed.'

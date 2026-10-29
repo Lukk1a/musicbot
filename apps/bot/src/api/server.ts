@@ -33,6 +33,10 @@ export class Server {
 		this.app
 			.use(bodyParser.json())
 			.use(bodyParser.urlencoded({ extended: true }))
+			.use((req: any, _res: any, next: any) => {
+				console.log('[Server Middleware] Content-Type:', req.headers['content-type'], 'Body:', req.body)
+				next()
+			})
 			.use(Log)
 			.use(PlatformAcceptMimesMiddleware)
 
