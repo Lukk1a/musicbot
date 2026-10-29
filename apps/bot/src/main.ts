@@ -11,9 +11,21 @@ import discordLogs from 'discord-logs'
 import { Client, DIService, DGuard, MetadataStorage, tsyringeDependencyRegistryEngine } from 'discordx'
 
 // Polyfill @discordx/internal 1.2.0 compatibility
-const decoratorProto = Object.getPrototypeOf(DGuard.prototype)
-if (decoratorProto && !decoratorProto.decorateUnknown) {
-	decoratorProto.decorateUnknown = decoratorProto.attachToTarget
+try {
+	const discordxPath = require.resolve('discordx')
+	const internalPath = require.resolve('@discordx/internal', { paths: [discordxPath] })
+	const internal = require(internalPath)
+	if (internal.Decorator && !internal.Decorator.prototype.decorateUnknown) {
+		internal.Decorator.prototype.decorateUnknown = internal.Decorator.prototype.attachToTarget
+	}
+	if (internal.Modifier && !internal.Modifier.applyFromModifierListToList) {
+		internal.Modifier.applyFromModifierListToList = internal.Modifier.modify
+	}
+} catch (e) {
+	const decoratorProto = Object.getPrototypeOf(DGuard.prototype)
+	if (decoratorProto && !decoratorProto.decorateUnknown) {
+		decoratorProto.decorateUnknown = decoratorProto.attachToTarget
+	}
 }
 
 import { container } from 'tsyringe'
