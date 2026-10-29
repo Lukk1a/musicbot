@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Corepack and pnpm
-RUN corepack enable pnpm
+# Install pnpm directly
+RUN npm install -g pnpm@11.22.0
 
 WORKDIR /app
 
