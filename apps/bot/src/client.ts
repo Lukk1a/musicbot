@@ -14,13 +14,10 @@ export function clientConfig(): ClientOptions {
 		// Required Discord Gateway Intents
 		intents: [
 			GatewayIntentBits.Guilds,
-			GatewayIntentBits.GuildMembers,
+			GatewayIntentBits.GuildVoiceStates,
 			GatewayIntentBits.GuildMessages,
 			GatewayIntentBits.GuildMessageReactions,
-			GatewayIntentBits.GuildVoiceStates,
-			GatewayIntentBits.GuildPresences,
 			GatewayIntentBits.DirectMessages,
-			GatewayIntentBits.MessageContent,
 		],
 
 		partials: [

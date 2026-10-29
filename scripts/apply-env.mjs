@@ -68,8 +68,8 @@ try {
 	})
 	console.log('✓ Files copied to server')
 
-	console.log('Restarting docker containers on server...')
-	execSync(`ssh ${serverTarget} "cd ~/musicbot && docker compose restart"`, {
+	console.log('Recreating docker containers on server with new environment...')
+	execSync(`ssh ${serverTarget} "cd ~/musicbot && docker compose up -d --force-recreate"`, {
 		stdio: 'inherit'
 	})
 	console.log('✓ Containers restarted successfully!')
