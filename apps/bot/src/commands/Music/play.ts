@@ -1,5 +1,5 @@
 // apps/bot/src/commands/Music/play.ts
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { ApplicationCommandOptionType, CommandInteraction, EmbedBuilder } from 'discord.js'
 import { injectable } from 'tsyringe'
 
@@ -46,7 +46,7 @@ export default class PlayCommand {
 			const current = state.currentTrack
 			const embed = new EmbedBuilder()
 				.setColor(0x5865F2)
-				.setTitle(state.queue.length > 0 && current?.title !== query ? '🎶 Added to Queue' : '▶ Now Playing')
+				.setTitle(state.queue.length > 0 && current?.title !== query ? 'ðŸŽ¶ Added to Queue' : 'â–¶ Now Playing')
 				.setDescription(`[${current?.title || query}](${current?.url || ''})`)
 				.addFields(
 					{ name: 'Author', value: current?.author || 'Unknown', inline: true },
@@ -61,7 +61,7 @@ export default class PlayCommand {
 		}
 		catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to play track.'
-			await interaction.followUp({ content: `❌ ${message}` })
+			await interaction.followUp({ content: `âŒ ${message}` })
 		}
 	}
 

@@ -1,4 +1,4 @@
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { CommandInteraction, Message } from 'discord.js'
 import { Client } from 'discordx'
 

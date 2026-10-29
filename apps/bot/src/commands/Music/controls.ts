@@ -1,5 +1,5 @@
 // apps/bot/src/commands/Music/controls.ts
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import { injectable } from 'tsyringe'
 
@@ -28,11 +28,11 @@ export default class ControlsCommand {
 				action: 'pause',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: '⏸ Playback paused.' })
+			await interaction.followUp({ content: 'â¸ Playback paused.' })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to pause playback.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -48,11 +48,11 @@ export default class ControlsCommand {
 				action: 'resume',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: '▶ Playback resumed.' })
+			await interaction.followUp({ content: 'â–¶ Playback resumed.' })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to resume playback.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -68,11 +68,11 @@ export default class ControlsCommand {
 				action: 'skip',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: '⏭ Skipped track.' })
+			await interaction.followUp({ content: 'â­ Skipped track.' })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to skip track.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -88,11 +88,11 @@ export default class ControlsCommand {
 				action: 'stop',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: '⏹ Playback stopped and queue cleared.' })
+			await interaction.followUp({ content: 'â¹ Playback stopped and queue cleared.' })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to stop playback.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -108,11 +108,11 @@ export default class ControlsCommand {
 				action: 'shuffle',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: '🔀 Queue shuffled.' })
+			await interaction.followUp({ content: 'ðŸ”€ Queue shuffled.' })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to shuffle queue.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -140,11 +140,11 @@ export default class ControlsCommand {
 				value: level,
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: `🔊 Volume set to **${level}%**.` })
+			await interaction.followUp({ content: `ðŸ”Š Volume set to **${level}%**.` })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to set volume.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -178,11 +178,11 @@ export default class ControlsCommand {
 			})
 
 			const labels = ['Disabled (Off)', 'Current Track', 'Entire Queue', 'Autoplay']
-			await interaction.followUp({ content: `🔁 Loop mode set to **${labels[mode]}**.` })
+			await interaction.followUp({ content: `ðŸ” Loop mode set to **${labels[mode]}**.` })
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to update loop mode.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 

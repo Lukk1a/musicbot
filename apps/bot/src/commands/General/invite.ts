@@ -1,4 +1,4 @@
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { CommandInteraction, EmbedBuilder } from 'discord.js'
 import { Client } from 'discordx'
 
@@ -24,7 +24,7 @@ export default class InviteCommand {
 			.setTitle(localize.COMMANDS.INVITE.EMBED.TITLE())
 			.setDescription(localize.COMMANDS.INVITE.EMBED.DESCRIPTION({ link: generalConfig.links.invite }))
 			.setColor(getColor('primary'))
-			.setFooter({ text: 'Powered by DiscBot Team ❤' })
+			.setFooter({ text: 'Powered by DiscBot Team â¤' })
 
 		interaction.followUp({
 			embeds: [embed],

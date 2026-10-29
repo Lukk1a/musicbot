@@ -1,4 +1,4 @@
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { ActionRowBuilder, APISelectMenuOption, CommandInteraction, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuInteraction } from 'discord.js'
 import { Client, MetadataStorage, SelectMenuComponent } from 'discordx'
 import { TranslationFunctions } from 'src/i18n/i18n-types'
@@ -110,7 +110,7 @@ export default class HelpCommand {
 			})
 			.setTitle(locale.COMMANDS.HELP.EMBED.CATEGORY_TITLE({ category }))
 			.setFooter({
-				text: `${client.user!.username} • Page ${pageNumber + 1} of ${maxPage}`,
+				text: `${client.user!.username} â€¢ Page ${pageNumber + 1} of ${maxPage}`,
 			})
 
 		if (!resultsOfPage)

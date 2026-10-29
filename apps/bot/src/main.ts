@@ -36,7 +36,7 @@ async function loadFiles(path: string): Promise<void> {
 		files.map((file) => {
 			const newFileName = file.replace('file://', '')
 			delete require.cache[newFileName]
-			import(newFileName)
+			return import(newFileName)
 		})
 	)
 }

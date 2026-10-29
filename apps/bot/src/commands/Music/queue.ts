@@ -1,5 +1,5 @@
 // apps/bot/src/commands/Music/queue.ts
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { ApplicationCommandOptionType, CommandInteraction, EmbedBuilder } from 'discord.js'
 import { injectable } from 'tsyringe'
 
@@ -38,11 +38,11 @@ export default class QueueCommand {
 			const percent = Math.min(100, Math.max(0, (currentMs / totalMs) * 100))
 			const barLength = 15
 			const progressIndex = Math.round((percent / 100) * barLength)
-			const bar = '▬'.repeat(Math.max(0, progressIndex)) + '🔘' + '▬'.repeat(Math.max(0, barLength - progressIndex))
+			const bar = 'â–¬'.repeat(Math.max(0, progressIndex)) + 'ðŸ”˜' + 'â–¬'.repeat(Math.max(0, barLength - progressIndex))
 
 			const embed = new EmbedBuilder()
 				.setColor(0x5865F2)
-				.setTitle('🎧 Now Playing')
+				.setTitle('ðŸŽ§ Now Playing')
 				.setDescription(`[${current.title}](${current.url})`)
 				.addFields(
 					{ name: 'Author', value: current.author || 'Unknown', inline: true },
@@ -58,7 +58,7 @@ export default class QueueCommand {
 		}
 		catch (error) {
 			const msg = error instanceof Error ? error.message : 'Failed to retrieve playback details.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -97,14 +97,14 @@ export default class QueueCommand {
 			const tracksForPage = queue.slice(start, start + pageSize)
 
 			const queueListText = tracksForPage.length > 0
-				? tracksForPage.map((t, idx) => `**${start + idx + 1}.** [${t.title}](${t.url}) — \`${t.duration}\` (${t.requestedBy ? t.requestedBy.username : 'Unknown'})`).join('\n')
+				? tracksForPage.map((t, idx) => `**${start + idx + 1}.** [${t.title}](${t.url}) â€” \`${t.duration}\` (${t.requestedBy ? t.requestedBy.username : 'Unknown'})`).join('\n')
 				: '*No more tracks in queue.*'
 
 			const embed = new EmbedBuilder()
 				.setColor(0x5865F2)
-				.setTitle(`🎶 Server Music Queue (Page ${page}/${totalPages})`)
+				.setTitle(`ðŸŽ¶ Server Music Queue (Page ${page}/${totalPages})`)
 				.addFields(
-					{ name: '▶ Currently Playing', value: current ? `[${current.title}](${current.url}) — \`${current.duration}\`` : 'None' },
+					{ name: 'â–¶ Currently Playing', value: current ? `[${current.title}](${current.url}) â€” \`${current.duration}\`` : 'None' },
 					{ name: 'Up Next', value: queueListText }
 				)
 				.setFooter({ text: `Total queued tracks: ${queue.length}` })
@@ -113,7 +113,7 @@ export default class QueueCommand {
 		}
 		catch (error) {
 			const msg = error instanceof Error ? error.message : 'Failed to view queue.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -143,11 +143,11 @@ export default class QueueCommand {
 				userId: interaction.user.id,
 			})
 
-			await interaction.followUp({ content: `🗑 Removed track #${position} from the queue. Total tracks remaining: ${state.queue.length}.` })
+			await interaction.followUp({ content: `ðŸ—‘ Removed track #${position} from the queue. Total tracks remaining: ${state.queue.length}.` })
 		}
 		catch (error) {
 			const msg = error instanceof Error ? error.message : 'Failed to remove track.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 
@@ -177,11 +177,11 @@ export default class QueueCommand {
 				userId: interaction.user.id,
 			})
 
-			await interaction.followUp({ content: `⏭ Jumped to track #${position}: **${state.currentTrack?.title || 'Unknown'}**.` })
+			await interaction.followUp({ content: `â­ Jumped to track #${position}: **${state.currentTrack?.title || 'Unknown'}**.` })
 		}
 		catch (error) {
 			const msg = error instanceof Error ? error.message : 'Failed to jump to track.'
-			await interaction.followUp({ content: `❌ ${msg}` })
+			await interaction.followUp({ content: `âŒ ${msg}` })
 		}
 	}
 

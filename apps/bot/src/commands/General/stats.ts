@@ -2,7 +2,7 @@ import {
 	Pagination,
 	PaginationType,
 } from '@discordx/pagination'
-import { Category } from '@discordx/utilities'
+import { Category } from '@/decorators'
 import { ApplicationCommandOptionType, CommandInteraction, EmbedBuilder, User } from 'discord.js'
 import { Client } from 'discordx'
 
