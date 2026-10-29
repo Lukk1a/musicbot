@@ -8,7 +8,14 @@ import { RequestContext } from '@mikro-orm/core'
 import chalk from 'chalk'
 import chokidar from 'chokidar'
 import discordLogs from 'discord-logs'
-import { Client, DIService, MetadataStorage, tsyringeDependencyRegistryEngine } from 'discordx'
+import { Client, DIService, DGuard, MetadataStorage, tsyringeDependencyRegistryEngine } from 'discordx'
+
+// Polyfill @discordx/internal 1.2.0 compatibility
+const decoratorProto = Object.getPrototypeOf(DGuard.prototype)
+if (decoratorProto && !decoratorProto.decorateUnknown) {
+	decoratorProto.decorateUnknown = decoratorProto.attachToTarget
+}
+
 import { container } from 'tsyringe'
 import { constructor } from 'tsyringe/dist/typings/types'
 
@@ -83,7 +90,6 @@ async function reload(client: Client) {
 	client.initEvents()
 
 	// re-init services
-
 	const pluginManager = await resolveDependency(PluginsManager)
 	await pluginManager.loadPlugins()
 
@@ -107,7 +113,7 @@ async function init() {
 	await pluginManager.loadPlugins()
 	await pluginManager.syncTranslations()
 
-	// strart spinner
+	// start spinner
 	console.log('\n')
 	logger.startSpinner('Starting...')
 
@@ -140,51 +146,52 @@ async function init() {
 		// init the plugin main file
 		await pluginManager.execMains()
 
+		// start the api server
+		if (apiConfig.enabled) {
+			const server = await resolveDependency(Server)
+			await server.start()
+		}
+
 		// log in with the bot token
-		if (!env.BOT_TOKEN) throw new NoBotTokenError()
-		client.login(env.BOT_TOKEN)
-			.then(async () => {
-				if (env.NODE_ENV === 'development') {
-					// reload commands and events when a file changes
-					watcher?.on('change', () => reload(client))
+		if (!env.BOT_TOKEN) {
+			logger.console('No bot token provided in environment variables (BOT_TOKEN).', 'error')
+		} else {
+			client.login(env.BOT_TOKEN)
+				.then(async () => {
+					if (env.NODE_ENV === 'development') {
+						// reload commands and events when a file changes
+						watcher?.on('change', () => reload(client))
 
-					// reload commands and events when a file is added
-					watcher?.on('add', () => reload(client))
+						// reload commands and events when a file is added
+						watcher?.on('add', () => reload(client))
 
-					// reload commands and events when a file is deleted
-					watcher?.on('unlink', () => reload(client))
-				}
+						// reload commands and events when a file is deleted
+						watcher?.on('unlink', () => reload(client))
+					}
 
-				// start the api server
-				if (apiConfig.enabled) {
-					const server = await resolveDependency(Server)
-					await server.start()
-				}
-
-				// upload images to imgur if configured
-				if (env.IMGUR_CLIENT_ID && generalConfig.automaticUploadImagesToImgur) {
-					const imagesUpload = await resolveDependency(ImagesUpload)
-					await imagesUpload.syncWithDatabase()
-				}
-
-				const store = await container.resolve(Store)
-				store.select('ready').subscribe(async (ready) => {
-					// check that all properties that are not null are set to true
-					if (
-						Object
-							.values(ready)
-							.filter(value => value !== null)
-							.every(value => value === true)
-					) {
-						const eventManager = await resolveDependency(EventManager)
-						eventManager.emit('templateReady') // the template is fully ready!
+					// upload images to imgur if configured
+					if (env.IMGUR_CLIENT_ID && generalConfig.automaticUploadImagesToImgur) {
+						const imagesUpload = await resolveDependency(ImagesUpload)
+						await imagesUpload.syncWithDatabase()
 					}
 				})
-			})
-			.catch((err) => {
-				console.error(err)
-				process.exit(1)
-			})
+				.catch((err) => {
+					logger.console(`Discord login error: ${err.message}`, 'error')
+				})
+		}
+
+		const store = await container.resolve(Store)
+		store.select('ready').subscribe(async (ready) => {
+			if (
+				Object
+					.values(ready)
+					.filter(value => value !== null)
+					.every(value => value === true)
+			) {
+				const eventManager = await resolveDependency(EventManager)
+				eventManager.emit('templateReady')
+			}
+		})
 	})
 }
 
