@@ -15,16 +15,63 @@ try {
 	const discordxPath = require.resolve('discordx')
 	const internalPath = require.resolve('@discordx/internal', { paths: [discordxPath] })
 	const internal = require(internalPath)
-	if (internal.Decorator && !internal.Decorator.prototype.decorateUnknown) {
-		internal.Decorator.prototype.decorateUnknown = internal.Decorator.prototype.attachToTarget
+	if (internal.Decorator) {
+		const proto = internal.Decorator.prototype
+		if (!proto.decorateUnknown) {
+			proto.decorateUnknown = proto.attachToTarget
+		}
+		if (!Object.prototype.hasOwnProperty.call(proto, '_method')) {
+			Object.defineProperty(proto, '_method', {
+				get() { return this._methodReference ?? this.method },
+				set(v) { this._methodReference = v },
+				configurable: true,
+			})
+		}
+		if (!Object.prototype.hasOwnProperty.call(proto, '_from')) {
+			Object.defineProperty(proto, '_from', {
+				get() { return this._sourceClass ?? this.from },
+				set(v) { this._sourceClass = v },
+				configurable: true,
+			})
+		}
+		if (!Object.prototype.hasOwnProperty.call(proto, '_classRef')) {
+			Object.defineProperty(proto, '_classRef', {
+				get() { return this._targetClass ?? this.classRef },
+				set(v) { this._targetClass = v },
+				configurable: true,
+			})
+		}
+		if (!Object.prototype.hasOwnProperty.call(proto, '_key')) {
+			Object.defineProperty(proto, '_key', {
+				get() { return this._propertyName ?? this.key },
+				set(v) { this._propertyName = v },
+				configurable: true,
+			})
+		}
+		if (!Object.prototype.hasOwnProperty.call(proto, '_index')) {
+			Object.defineProperty(proto, '_index', {
+				get() { return this._parameterIndex ?? this.index },
+				set(v) { this._parameterIndex = v },
+				configurable: true,
+			})
+		}
 	}
 	if (internal.Modifier && !internal.Modifier.applyFromModifierListToList) {
 		internal.Modifier.applyFromModifierListToList = internal.Modifier.modify
 	}
 } catch (e) {
 	const decoratorProto = Object.getPrototypeOf(DGuard.prototype)
-	if (decoratorProto && !decoratorProto.decorateUnknown) {
-		decoratorProto.decorateUnknown = decoratorProto.attachToTarget
+	if (decoratorProto) {
+		if (!decoratorProto.decorateUnknown) {
+			decoratorProto.decorateUnknown = decoratorProto.attachToTarget
+		}
+		if (!Object.prototype.hasOwnProperty.call(decoratorProto, '_method')) {
+			Object.defineProperty(decoratorProto, '_method', {
+				get() { return this._methodReference ?? this.method },
+				set(v) { this._methodReference = v },
+				configurable: true,
+			})
+		}
 	}
 }
 
