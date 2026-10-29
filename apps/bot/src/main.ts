@@ -146,6 +146,9 @@ async function init() {
 	await pluginManager.importCommands()
 	await pluginManager.importEvents()
 
+	// Build discordx metadata storage and link instances
+	await MetadataStorage.instance.build()
+
 	RequestContext.create(db.orm.em, async () => {
 		const watcher = env.NODE_ENV === 'development' ? chokidar.watch(importPattern) : null
 
