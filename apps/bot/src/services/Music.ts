@@ -2,6 +2,7 @@
 import {
 	GuildQueue,
 	Player,
+	QueryType,
 	QueueRepeatMode,
 	Track,
 } from 'discord-player'
@@ -257,9 +258,19 @@ export class MusicService {
 					console.warn(`[MusicService] Could not retrieve GuildMusicConfig for ${guildId}:`, err)
 				}
 
-				console.log(`[MusicService] Playing "${action.query}" in guild ${guildId} (channel: ${auth.voiceChannel.name})...`)
+				console.log(`[MusicService] Searching "${action.query}" in guild ${guildId} (channel: ${auth.voiceChannel.name})...`)
 
-				const playResult = await player.play(auth.voiceChannel, action.query, {
+				const isUrl = action.query.startsWith('http://') || action.query.startsWith('https://')
+				const searchResult = await player.search(action.query, {
+					requestedBy: auth.member.user,
+					searchEngine: isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH,
+				})
+
+				if (!searchResult || !searchResult.tracks.length) {
+					throw new Error(`No tracks found matching "${action.query}".`)
+				}
+
+				const playResult = await player.play(auth.voiceChannel, searchResult, {
 					nodeOptions: {
 						metadata: {
 							voiceChannel: auth.voiceChannel,
@@ -274,7 +285,7 @@ export class MusicService {
 					requestedBy: auth.member.user,
 				})
 
-				const trackTitle = playResult.track?.title ?? action.query
+				const trackTitle = playResult.track?.title ?? searchResult.tracks[0]?.title ?? action.query
 				console.log(`[MusicService] Successfully queued: "${trackTitle}"`)
 				break
 			}
