@@ -31,7 +31,9 @@ export default class PlayCommand {
 		query: string,
 		interaction: CommandInteraction
 	) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 
 		try {
 			const guildId = interaction.guildId!

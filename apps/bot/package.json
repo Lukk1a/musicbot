@@ -86,6 +86,7 @@
     "rxeta": "~1.1.2",
     "saveqlite": "~1.1.2",
     "semver": "^7.6.3",
+    "simple-ytdl-core": "^1.1.1",
     "socket.io": "^4.8.1",
     "stacktrace-parser": "~0.1.10",
     "swagger-ui-express": "~5.0.1",

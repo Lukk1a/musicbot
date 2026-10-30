@@ -6,6 +6,7 @@ import {
 	QueueRepeatMode,
 	Track,
 } from 'discord-player'
+import { YoutubeExtractor as YoutubeiExtractor } from 'discord-player-youtubei'
 import {
 	Guild,
 	GuildMember,
@@ -58,11 +59,12 @@ export class MusicService {
 				skipFFmpeg: false,
 			})
 
+			await this.player.extractors.register(YoutubeiExtractor, {})
 			await this.player.extractors.loadDefault()
 			this.registerPlayerEvents(this.player)
 			this.isInitialized = true
 
-			console.log('[MusicService] discord-player v6 initialized with default extractors.')
+			console.log('[MusicService] discord-player v6 initialized with Youtubei and default extractors.')
 			return this.player
 		}
 		catch (error) {

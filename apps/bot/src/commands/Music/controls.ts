@@ -22,7 +22,9 @@ export default class ControlsCommand {
 	})
 	@Guard(GuildOnly, InVoiceChannel)
 	async pause(interaction: CommandInteraction) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'pause',
@@ -42,7 +44,9 @@ export default class ControlsCommand {
 	})
 	@Guard(GuildOnly, InVoiceChannel)
 	async resume(interaction: CommandInteraction) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'resume',
@@ -62,7 +66,9 @@ export default class ControlsCommand {
 	})
 	@Guard(GuildOnly, InVoiceChannel)
 	async skip(interaction: CommandInteraction) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'skip',
@@ -82,7 +88,9 @@ export default class ControlsCommand {
 	})
 	@Guard(GuildOnly, InVoiceChannel)
 	async stop(interaction: CommandInteraction) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'stop',
@@ -102,7 +110,9 @@ export default class ControlsCommand {
 	})
 	@Guard(GuildOnly, InVoiceChannel)
 	async shuffle(interaction: CommandInteraction) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'shuffle',
@@ -133,7 +143,9 @@ export default class ControlsCommand {
 		level: number,
 		interaction: CommandInteraction
 	) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'volume',
@@ -169,7 +181,9 @@ export default class ControlsCommand {
 		mode: number,
 		interaction: CommandInteraction
 	) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 		try {
 			await this.musicService.executeAction(interaction.guildId!, {
 				action: 'loop',

@@ -22,7 +22,9 @@ export default class QueueCommand {
 	})
 	@Guard(GuildOnly)
 	async nowplaying(interaction: CommandInteraction) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 
 		try {
 			const state = this.musicService.getSerializedState(interaction.guildId!)
@@ -78,7 +80,9 @@ export default class QueueCommand {
 		pageInput: number | undefined,
 		interaction: CommandInteraction
 	) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 
 		try {
 			const state = this.musicService.getSerializedState(interaction.guildId!)
@@ -133,7 +137,9 @@ export default class QueueCommand {
 		position: number,
 		interaction: CommandInteraction
 	) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 
 		try {
 			const trackIndex = position - 1
@@ -167,7 +173,9 @@ export default class QueueCommand {
 		position: number,
 		interaction: CommandInteraction
 	) {
-		await interaction.deferReply()
+		if (!interaction.deferred && !interaction.replied) {
+			await interaction.deferReply()
+		}
 
 		try {
 			const trackIndex = position - 1
