@@ -43,7 +43,14 @@ export default class InteractionCreateEvent {
 		await this.stats.registerInteraction(interaction as AllInteractions)
 		this.logger.logInteraction(interaction as AllInteractions)
 
-		client.executeInteraction(interaction)
+		try {
+			await client.executeInteraction(interaction)
+		} catch (error) {
+			console.error('[interactionCreateHandler] Error executing interaction:', error)
+			if (interaction instanceof CommandInteraction && (interaction.deferred || interaction.replied)) {
+				await interaction.followUp({ content: '❌ An unexpected error occurred while executing this command.', ephemeral: true }).catch(() => null)
+			}
+		}
 	}
 
 }

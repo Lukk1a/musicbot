@@ -11,5 +11,9 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "discord-voip": "npm:@discordjs/voice@^0.19.2",
+    "discord-api-types": "^0.38.57"
   }
 }

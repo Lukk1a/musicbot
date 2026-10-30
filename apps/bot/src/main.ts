@@ -3,6 +3,21 @@ import 'dotenv/config'
 
 import process from 'node:process'
 
+// Hook module resolution to redirect deprecated 'discord-voip' to modern '@discordjs/voice'
+try {
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	const Module = require('node:module')
+	const originalResolveFilename = Module._resolveFilename
+	Module._resolveFilename = function (request: string, parent: any, isMain: boolean, options: any) {
+		if (request === 'discord-voip' || request.startsWith('discord-voip/')) {
+			request = request.replace(/^discord-voip/, '@discordjs/voice')
+		}
+		return originalResolveFilename.call(this, request, parent, isMain, options)
+	}
+} catch (e) {
+	console.error('[main] Failed to hook discord-voip resolution:', e)
+}
+
 import { resolve } from '@discordx/importer'
 import { RequestContext } from '@mikro-orm/core'
 import chalk from 'chalk'

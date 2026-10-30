@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+pnpmfileChecksum: sha256-ZJ4hF0mn4NMwtQIWFmYtKDJFNakyvMWIuiH/VpMMDTI=
+
 importers:
 
   .:
@@ -19,7 +21,7 @@ importers:
         version: 4.5.1(encoding@0.1.14)
       '@discordjs/voice':
         specifier: ^0.19.2
-        version: 0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(opusscript@0.1.1)
+        version: 0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1)
       '@discordx/importer':
         specifier: ~1.3.1
         version: 1.3.3
@@ -108,8 +110,8 @@ importers:
         specifier: ~1.11.13
         version: 1.11.23
       discord-api-types:
-        specifier: ~0.37.115
-        version: 0.37.120
+        specifier: ^0.38.57
+        version: 0.38.57
       discord-logs:
         specifier: ~2.2.1
         version: 2.2.1
@@ -118,10 +120,13 @@ importers:
         version: 2.12.1
       discord-player:
         specifier: ^6.7.1
-        version: 6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))(opusscript@0.1.1)
+        version: 6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1)
       discord-player-youtubei:
         specifier: ^3.1.0
         version: 3.1.0(bgutils-js@4.0.3)(googlevideo@4.1.1)
+      discord-voip:
+        specifier: npm:@discordjs/voice@^0.19.2
+        version: '@discordjs/voice@0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1)'
       discord.js:
         specifier: ~14.16.3
         version: 14.16.3
@@ -506,9 +511,6 @@ packages:
 
   '@discord-player/ffmpeg@0.1.0':
     resolution: {integrity: sha512-0kW6q4gMQN2B4Z4EzmUgXrKQSXXmyhjdZBBZ/6jSHZ9fh814oOu+JXP01VvtWHwTylI7qJHIctEWtSyjEubCJg==}
-
-  '@discord-player/opus@0.1.2':
-    resolution: {integrity: sha512-yF0m+pW7H9RCbRcgk/i6vv47tlWxaCHjp6/F0W4GXZMGZ0pcvZaxk8ic7aFPc3+IoDvrAHvWNomLq+JeFzdncA==}
 
   '@discord-player/utils@0.2.2':
     resolution: {integrity: sha512-UklWUT7BcZEkBgywM9Cmpo2nwj3SQ9Wmhu6ml1uy/YRQnY8IRdZEHD84T2kfjOg4LVZek0ej1VerIqq7a9PAHQ==}
@@ -2623,9 +2625,6 @@ packages:
   discord-api-types@0.37.100:
     resolution: {integrity: sha512-a8zvUI0GYYwDtScfRd/TtaNBDTXwP5DiDVX7K5OmE+DRT57gBqKnwtOC5Ol8z0mRW8KQfETIgiB8U0YZ9NXiCA==}
 
-  discord-api-types@0.37.120:
-    resolution: {integrity: sha512-7xpNK0EiWjjDFp2nAhHXezE4OUWm7s1zhc/UXXN6hnFFU8dfoPHgV0Hx0RPiCa3ILRpdeh152icc68DGCyXYIw==}
-
   discord-api-types@0.37.83:
     resolution: {integrity: sha512-urGGYeWtWNYMKnYlZnOnDHm8fVRffQs3U0SpE8RHeiuLKb/u92APS8HoQnPTFbnXmY1vVnXjXO4dOxcAn3J+DA==}
 
@@ -2652,10 +2651,6 @@ packages:
     resolution: {integrity: sha512-ScQmChpZebpVzs+RMsSkCXSORUIXUR3aHsEssGZSLKrbWnregt3jVc39emftTt6EfarZ2TvTK262mXeAYPzpcQ==}
     peerDependencies:
       '@discord-player/extractor': ^4.5.0
-
-  discord-voip@0.1.3:
-    resolution: {integrity: sha512-9DWY5/BLPXeldVwPr8/ggGjggTYOTw77aGQc3+4n5K54bRbbiJ9DUJc+mJzDiSLoHN3f286eRGACJYtrUu27xA==}
-    engines: {node: '>=16.9.0'}
 
   discord.js@14.16.3:
     resolution: {integrity: sha512-EPCWE9OkA9DnFFNrO7Kl1WHHDYFXu3CNVFJg63bfU7hVtjZGyhShwZtSBImINQRWxWP2tgo2XI+QhdXx28r0aA==}
@@ -6547,8 +6542,6 @@ snapshots:
 
   '@discord-player/ffmpeg@0.1.0': {}
 
-  '@discord-player/opus@0.1.2': {}
-
   '@discord-player/utils@0.2.2':
     dependencies:
       '@discordjs/collection': 1.5.3
@@ -6591,9 +6584,9 @@ snapshots:
     dependencies:
       discord-api-types: 0.38.57
 
-  '@discordjs/voice@0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(opusscript@0.1.1)':
+  '@discordjs/voice@0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1)':
     dependencies:
-      '@snazzah/davey': 0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@snazzah/davey': 0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)
       '@types/ws': 8.18.2
       discord-api-types: 0.38.57
       prism-media: 1.3.5(opusscript@0.1.1)
@@ -7063,6 +7056,13 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
+  '@napi-rs/wasm-runtime@1.2.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)':
+    dependencies:
+      '@emnapi/core': 1.10.0
+      '@emnapi/runtime': 1.11.3
+      '@tybys/wasm-util': 0.10.4
+    optional: true
+
   '@next/env@15.5.28': {}
 
   '@next/swc-darwin-arm64@15.5.28':
@@ -7200,9 +7200,9 @@ snapshots:
   '@snazzah/davey-linux-x64-musl@0.1.12':
     optional: true
 
-  '@snazzah/davey-wasm32-wasi@0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@snazzah/davey-wasm32-wasi@0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.2.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@napi-rs/wasm-runtime': 1.2.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -7217,7 +7217,7 @@ snapshots:
   '@snazzah/davey-win32-x64-msvc@0.1.12':
     optional: true
 
-  '@snazzah/davey@0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@snazzah/davey@0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)':
     optionalDependencies:
       '@snazzah/davey-android-arm-eabi': 0.1.12
       '@snazzah/davey-android-arm64': 0.1.12
@@ -7229,7 +7229,7 @@ snapshots:
       '@snazzah/davey-linux-arm64-musl': 0.1.12
       '@snazzah/davey-linux-x64-gnu': 0.1.12
       '@snazzah/davey-linux-x64-musl': 0.1.12
-      '@snazzah/davey-wasm32-wasi': 0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@snazzah/davey-wasm32-wasi': 0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)
       '@snazzah/davey-win32-arm64-msvc': 0.1.12
       '@snazzah/davey-win32-ia32-msvc': 0.1.12
       '@snazzah/davey-win32-x64-msvc': 0.1.12
@@ -8295,7 +8295,7 @@ snapshots:
   camel-case@4.1.2:
     dependencies:
       pascal-case: 3.1.2
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   camelcase-css@2.0.1: {}
 
@@ -8306,7 +8306,7 @@ snapshots:
   capital-case@1.0.4:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
       upper-case-first: 2.0.2
 
   case@1.6.3: {}
@@ -8366,7 +8366,7 @@ snapshots:
       path-case: 3.0.4
       sentence-case: 3.0.4
       snake-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   character-entities-legacy@1.1.4: {}
 
@@ -8507,7 +8507,7 @@ snapshots:
   constant-case@3.0.4:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
       upper-case: 2.0.2
 
   content-disposition@0.5.4:
@@ -8766,8 +8766,6 @@ snapshots:
 
   discord-api-types@0.37.100: {}
 
-  discord-api-types@0.37.120: {}
-
   discord-api-types@0.37.83: {}
 
   discord-api-types@0.37.97: {}
@@ -8787,34 +8785,19 @@ snapshots:
       googlevideo: 4.1.1
       youtubei.js: 18.3.0
 
-  discord-player@6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))(opusscript@0.1.1):
+  discord-player@6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1):
     dependencies:
       '@discord-player/equalizer': 0.2.3
       '@discord-player/extractor': 4.5.1(encoding@0.1.14)
       '@discord-player/ffmpeg': 0.1.0
       '@discord-player/utils': 0.2.2
       '@web-scrobbler/metadata-filter': 3.2.0
-      discord-voip: 0.1.3(opusscript@0.1.1)
+      discord-voip: '@discordjs/voice@0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1)'
       libsodium-wrappers: 0.7.16
     transitivePeerDependencies:
       - '@discordjs/opus'
-      - bufferutil
-      - ffmpeg-static
-      - node-opus
-      - opusscript
-      - utf-8-validate
-
-  discord-voip@0.1.3(opusscript@0.1.1):
-    dependencies:
-      '@discord-player/ffmpeg': 0.1.0
-      '@discord-player/opus': 0.1.2
-      '@types/ws': 8.18.2
-      discord-api-types: 0.37.120
-      prism-media: 1.3.5(opusscript@0.1.1)
-      tslib: 2.8.1
-      ws: 8.22.0
-    transitivePeerDependencies:
-      - '@discordjs/opus'
+      - '@emnapi/core'
+      - '@emnapi/runtime'
       - bufferutil
       - ffmpeg-static
       - node-opus
@@ -8873,7 +8856,7 @@ snapshots:
   dot-case@3.0.4:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   dotenv@16.5.0: {}
 
@@ -9954,7 +9937,7 @@ snapshots:
   header-case@2.0.4:
     dependencies:
       capital-case: 1.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   himalaya@1.1.1: {}
 
@@ -10974,7 +10957,7 @@ snapshots:
   no-case@3.0.4:
     dependencies:
       lower-case: 2.0.2
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   node-abi@3.101.0:
     dependencies:
@@ -11242,7 +11225,7 @@ snapshots:
   param-case@3.0.4:
     dependencies:
       dot-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   parent-module@1.0.1:
     dependencies:
@@ -11301,7 +11284,7 @@ snapshots:
   pascal-case@3.1.2:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   pascalcase@0.1.1: {}
 
@@ -11312,7 +11295,7 @@ snapshots:
   path-case@3.0.4:
     dependencies:
       dot-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   path-exists@4.0.0: {}
 
@@ -11866,7 +11849,7 @@ snapshots:
   sentence-case@3.0.4:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
       upper-case-first: 2.0.2
 
   serve-static@1.16.3(supports-color@5.5.0):
@@ -12026,7 +12009,7 @@ snapshots:
   snake-case@3.0.4:
     dependencies:
       dot-case: 3.0.4
-      tslib: 2.6.1
+      tslib: 2.8.1
 
   snapdragon-node@2.1.1:
     dependencies:

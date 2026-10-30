@@ -11,12 +11,12 @@ RUN npm install -g pnpm@11.22.0
 WORKDIR /app
 
 # Copy root monorepo files
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json .pnpmfile.cjs ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/web/package.json ./apps/web/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy source code
 COPY packages/shared ./packages/shared
