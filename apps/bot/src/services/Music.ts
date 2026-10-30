@@ -6,12 +6,12 @@ import {
 	Track,
 } from 'discord-player'
 import {
-	Client,
 	Guild,
 	GuildMember,
 	PermissionsBitField,
 	VoiceBasedChannel,
 } from 'discord.js'
+import { Client } from 'discordx'
 
 import { Service } from '@/decorators'
 import { GuildMusicConfig } from '@/entities/GuildMusicConfig'

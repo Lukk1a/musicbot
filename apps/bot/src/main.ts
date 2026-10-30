@@ -8,6 +8,7 @@ import { RequestContext } from '@mikro-orm/core'
 import chalk from 'chalk'
 import chokidar from 'chokidar'
 import discordLogs from 'discord-logs'
+import { Client as DiscordJSClient } from 'discord.js'
 import { Client, DIService, DGuard, MetadataStorage, tsyringeDependencyRegistryEngine } from 'discordx'
 
 // Polyfill @discordx/internal 1.2.0 compatibility
@@ -146,6 +147,7 @@ async function reload(client: Client) {
 
 	// re-register the client instance
 	container.registerInstance(Client, client)
+	container.registerInstance(DiscordJSClient, client as unknown as DiscordJSClient)
 
 	// reload files
 	await loadFiles(importPattern)
@@ -194,6 +196,7 @@ async function init() {
 	// Load all new events
 	discordLogs(client, { debug: false })
 	container.registerInstance(Client, client)
+	container.registerInstance(DiscordJSClient, client as unknown as DiscordJSClient)
 
 	// import all the commands and events
 	await loadFiles(importPattern)
