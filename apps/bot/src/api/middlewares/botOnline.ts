@@ -18,14 +18,15 @@ export class BotOnline {
 	async use() {
 		if (!this.client) {
 			try {
-				this.client = await resolveDependency(Client)
+				this.client = await resolveDependency(Client, 200)
 			} catch {
 				throw new InternalServerError('Discord client is not ready')
 			}
 		}
 
-		if (this.client?.user?.presence?.status === 'offline')
-			throw new InternalServerError('Bot is offline')
+		if (!this.client?.isReady()) {
+			throw new InternalServerError('Discord client is not connected')
+		}
 	}
 
 }

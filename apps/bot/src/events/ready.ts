@@ -22,6 +22,8 @@ export default class ReadyEvent {
 
 	@Once('ready')
 	async readyHandler([client]: [Client]) {
+		client.user?.setStatus('online')
+
 		// make sure all guilds are cached
 		await client.guilds.fetch()
 
@@ -52,10 +54,10 @@ export default class ReadyEvent {
 		const ActivityTypeEnumString = ['PLAYING', 'STREAMING', 'LISTENING', 'WATCHING', 'CUSTOM', 'COMPETING'] // DO NOT CHANGE THE ORDER
 
 		const client = await resolveDependency(Client)
+		client.user?.setStatus('online')
 		const activity = generalConfig.activities[this.activityIndex]
 
 		if (activity.type === 'STREAMING') { // streaming activity
-			client.user?.setStatus('online')
 			client.user?.setActivity(activity.text, {
 				url: 'https://www.twitch.tv/discord',
 				type: ActivityType.Streaming,
