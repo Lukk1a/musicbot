@@ -261,10 +261,27 @@ export class MusicService {
 				console.log(`[MusicService] Searching "${action.query}" in guild ${guildId} (channel: ${auth.voiceChannel.name})...`)
 
 				const isUrl = action.query.startsWith('http://') || action.query.startsWith('https://')
-				const searchResult = await player.search(action.query, {
+				let searchResult = await player.search(action.query, {
 					requestedBy: auth.member.user,
 					searchEngine: isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH,
-				})
+				}).catch(() => null)
+
+				if (!searchResult || !searchResult.tracks.length) {
+					if (!isUrl) {
+						console.log(`[MusicService] No YouTube results for "${action.query}", trying SoundCloud...`)
+						searchResult = await player.search(action.query, {
+							requestedBy: auth.member.user,
+							searchEngine: QueryType.SOUNDCLOUD_SEARCH,
+						}).catch(() => null)
+					}
+				}
+
+				if (!searchResult || !searchResult.tracks.length) {
+					searchResult = await player.search(action.query, {
+						requestedBy: auth.member.user,
+						searchEngine: QueryType.AUTO,
+					}).catch(() => null)
+				}
 
 				if (!searchResult || !searchResult.tracks.length) {
 					throw new Error(`No tracks found matching "${action.query}".`)

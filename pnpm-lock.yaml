@@ -19,7 +19,7 @@ importers:
         version: 4.5.1(encoding@0.1.14)
       '@discordjs/voice':
         specifier: ^0.19.2
-        version: 0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+        version: 0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(opusscript@0.1.1)
       '@discordx/importer':
         specifier: ~1.3.1
         version: 1.3.3
@@ -118,7 +118,7 @@ importers:
         version: 2.12.1
       discord-player:
         specifier: ^6.7.1
-        version: 6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))
+        version: 6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))(opusscript@0.1.1)
       discord-player-youtubei:
         specifier: ^3.1.0
         version: 3.1.0(bgutils-js@4.0.3)(googlevideo@4.1.1)
@@ -158,9 +158,15 @@ importers:
       joi:
         specifier: ~17.13.3
         version: 17.13.9
+      mediaplex:
+        specifier: ^1.0.0
+        version: 1.0.0
       node-os-utils:
         specifier: ~1.3.7
         version: 1.3.7
+      opusscript:
+        specifier: ^0.1.1
+        version: 0.1.1
       ora:
         specifier: ~5.4.1
         version: 5.4.1
@@ -4025,6 +4031,110 @@ packages:
     resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
     engines: {node: '>= 0.6'}
 
+  mediaplex-android-arm-eabi@1.0.0:
+    resolution: {integrity: sha512-/Ec33NNTeYxDLePRewOnjt82yVjwFy2monHk4OFk/wov7gDXvNCwSsLVRzgQgVQ2QAxmEND75Cx1nlyMWRjfFQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [android]
+
+  mediaplex-android-arm64@1.0.0:
+    resolution: {integrity: sha512-qisiHCK6HiRhw9qKr99yGFqtJHV9w///Vg5sc3RCA5FpEZOgK/EPkE3XEyVaBXux6XzU9lF5KeCfHuWW/rZEGQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [android]
+
+  mediaplex-darwin-arm64@1.0.0:
+    resolution: {integrity: sha512-uux5Lb2RfE+51Xz+wf0fwBpx14k66eexeMjw2IWpEK5LMIU8QI1AU+ag/ocIxEf6yIdu/Dj8b4zaxxfr2B7usw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  mediaplex-darwin-universal@1.0.0:
+    resolution: {integrity: sha512-dwFIEZHuH7zsnAhAqP77Pc7i/YWMgXnDT2hBxF9/K5/wGxlV1HtdpJfY9Pug3A5SiCpb9YwQy5VGhW0se/aqIw==}
+    engines: {node: '>= 10'}
+    os: [darwin]
+
+  mediaplex-darwin-x64@1.0.0:
+    resolution: {integrity: sha512-pAiCp8vPNb1b103v2xV3x6W9SQZifg6+5TGZOczlltpEbANWSy5112MqEwCM3XBohOHcal1zLC2qxdaHM8edhw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  mediaplex-freebsd-x64@1.0.0:
+    resolution: {integrity: sha512-9lRsE3GumCRODm6OWBtfRyFCgC5mfLPVl+4miR52/+PVw2ABrdV+lnz2cKZDUfnmwxDGV1fTG6QMxs5D3xcuZQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [freebsd]
+
+  mediaplex-linux-arm-gnueabihf@1.0.0:
+    resolution: {integrity: sha512-mDBD2d/87CdmR4P0IUYyznzEmBoar7p4cbQiyT44voZ8LIG9w0RWHpP1r5zprbnt73YRrZwJTYhurF7mVixgRQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  mediaplex-linux-arm-musleabihf@1.0.0:
+    resolution: {integrity: sha512-Jzu8hRxS9vjbgRh92sfPV++wHHUHVGMRmHS0YAxzLso73IAVKMArhsVIEcTDVVN4/yF4D0HzD63AX6M3dgeoCA==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  mediaplex-linux-arm64-gnu@1.0.0:
+    resolution: {integrity: sha512-y6NXkTtjFSDqd6cXliZ8QYcQuHcVCk9MYHIHRNpPJU30M0CUvFx5Itgaemr/Si4Pl+VbU+UGHsoY7O1yoT7xEQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  mediaplex-linux-arm64-musl@1.0.0:
+    resolution: {integrity: sha512-7bpJG5wILQXLAEUAcFafMtlZmNZXKRFXaiMGKWSj29YZnyEwSHRiQEyemxu72SEYQibfwyq9Ah830pZAcfnIsg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  mediaplex-linux-riscv64-gnu@1.0.0:
+    resolution: {integrity: sha512-p0m6R5O/jSg3w6u7LCw2bwCDeXKKeYEmIqy9ORvOVZT6Cin96ojhj6ELj8/spRh8Uox1DUxiPkBJrTEzeNWugA==}
+    engines: {node: '>= 10'}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
+  mediaplex-linux-x64-gnu@1.0.0:
+    resolution: {integrity: sha512-8piBl1DmEeRtElr+aG8OgC7cszzhQN8jGh+ClB6FKIZ2uiRf9SQ9tWH4hsE+qm17SamOekiibG5kXDLNAtPrtg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  mediaplex-linux-x64-musl@1.0.0:
+    resolution: {integrity: sha512-9hZvUDxPHIuFI+Y4bT3io/TnDK1fnXbfAMWhObWd5qx7YyZJcvgS2M4p0x9a57dZnLSPc7sbNov1tQTqMm03RQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  mediaplex-win32-arm64-msvc@1.0.0:
+    resolution: {integrity: sha512-R2cQlKR+AjbafdtVnyPftkALxeam4XPEanT5SBo/IO1WmglC5MzppqHm8Gto5NleE16AqXHRPanQoi53fK49xg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  mediaplex-win32-ia32-msvc@1.0.0:
+    resolution: {integrity: sha512-CWvcvHw4x0moo2gJeDZEbar39TbCeZ0bV3Vu0n+DWzFEDxl5p3iIeZqlDsHbSvNQeU0iKVCQOgatxvUly3E/4g==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  mediaplex-win32-x64-msvc@1.0.0:
+    resolution: {integrity: sha512-yocvA647y6kAgBLpjllVjmp6ayvaBuqwrF+KhQnUnXbGH8celV0clJw9y7Ca8e38v89Yj4C73KpHxwGBk0sGqQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  mediaplex@1.0.0:
+    resolution: {integrity: sha512-2vj7Px34rNUmHKilpAagU7jNhKIyoG8/wZ/cvJQzUdhvul8ef03NOK3No3LWVZEF1Pi27VSFOwBvawli/B86hA==}
+    engines: {node: '>= 10'}
+
   memorystream@0.3.1:
     resolution: {integrity: sha512-S3UwM3yj5mtUSEfP41UZmt/0SCoVYUcU1rkXv+BQ5Ig8ndL4sPoJNBUJERafdPb5jjHJGuMgytgKvKIf58XNBw==}
     engines: {node: '>= 0.10.0'}
@@ -4420,6 +4530,9 @@ packages:
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
+
+  opusscript@0.1.1:
+    resolution: {integrity: sha512-mL0fZZOUnXdZ78woRXp18lApwpp0lF5tozJOD1Wut0dgrA9WuQTgSels/CSmFleaAZrJi/nci5KOVtbuxeWoQA==}
 
   ora@3.4.0:
     resolution: {integrity: sha512-eNwHudNbO1folBP3JsZ19v9azXWtQZjICdr3Q0TDPIaeBQ3mXLrh54wM+er0+hSp+dWKf+Z8KM58CYzEyIYxYg==}
@@ -6196,12 +6309,12 @@ snapshots:
     dependencies:
       discord-api-types: 0.38.57
 
-  '@discordjs/voice@0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@discordjs/voice@0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(opusscript@0.1.1)':
     dependencies:
       '@snazzah/davey': 0.1.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
       '@types/ws': 8.18.2
       discord-api-types: 0.38.57
-      prism-media: 1.3.5
+      prism-media: 1.3.5(opusscript@0.1.1)
       tslib: 2.8.1
       ws: 8.22.0
     transitivePeerDependencies:
@@ -8325,14 +8438,14 @@ snapshots:
       googlevideo: 4.1.1
       youtubei.js: 18.3.0
 
-  discord-player@6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14)):
+  discord-player@6.7.1(@discord-player/extractor@4.5.1(encoding@0.1.14))(opusscript@0.1.1):
     dependencies:
       '@discord-player/equalizer': 0.2.3
       '@discord-player/extractor': 4.5.1(encoding@0.1.14)
       '@discord-player/ffmpeg': 0.1.0
       '@discord-player/utils': 0.2.2
       '@web-scrobbler/metadata-filter': 3.2.0
-      discord-voip: 0.1.3
+      discord-voip: 0.1.3(opusscript@0.1.1)
       libsodium-wrappers: 0.7.16
     transitivePeerDependencies:
       - '@discordjs/opus'
@@ -8342,13 +8455,13 @@ snapshots:
       - opusscript
       - utf-8-validate
 
-  discord-voip@0.1.3:
+  discord-voip@0.1.3(opusscript@0.1.1):
     dependencies:
       '@discord-player/ffmpeg': 0.1.0
       '@discord-player/opus': 0.1.2
       '@types/ws': 8.18.2
       discord-api-types: 0.37.120
-      prism-media: 1.3.5
+      prism-media: 1.3.5(opusscript@0.1.1)
       tslib: 2.8.1
       ws: 8.22.0
     transitivePeerDependencies:
@@ -10155,6 +10268,73 @@ snapshots:
 
   media-typer@0.3.0: {}
 
+  mediaplex-android-arm-eabi@1.0.0:
+    optional: true
+
+  mediaplex-android-arm64@1.0.0:
+    optional: true
+
+  mediaplex-darwin-arm64@1.0.0:
+    optional: true
+
+  mediaplex-darwin-universal@1.0.0:
+    optional: true
+
+  mediaplex-darwin-x64@1.0.0:
+    optional: true
+
+  mediaplex-freebsd-x64@1.0.0:
+    optional: true
+
+  mediaplex-linux-arm-gnueabihf@1.0.0:
+    optional: true
+
+  mediaplex-linux-arm-musleabihf@1.0.0:
+    optional: true
+
+  mediaplex-linux-arm64-gnu@1.0.0:
+    optional: true
+
+  mediaplex-linux-arm64-musl@1.0.0:
+    optional: true
+
+  mediaplex-linux-riscv64-gnu@1.0.0:
+    optional: true
+
+  mediaplex-linux-x64-gnu@1.0.0:
+    optional: true
+
+  mediaplex-linux-x64-musl@1.0.0:
+    optional: true
+
+  mediaplex-win32-arm64-msvc@1.0.0:
+    optional: true
+
+  mediaplex-win32-ia32-msvc@1.0.0:
+    optional: true
+
+  mediaplex-win32-x64-msvc@1.0.0:
+    optional: true
+
+  mediaplex@1.0.0:
+    optionalDependencies:
+      mediaplex-android-arm-eabi: 1.0.0
+      mediaplex-android-arm64: 1.0.0
+      mediaplex-darwin-arm64: 1.0.0
+      mediaplex-darwin-universal: 1.0.0
+      mediaplex-darwin-x64: 1.0.0
+      mediaplex-freebsd-x64: 1.0.0
+      mediaplex-linux-arm-gnueabihf: 1.0.0
+      mediaplex-linux-arm-musleabihf: 1.0.0
+      mediaplex-linux-arm64-gnu: 1.0.0
+      mediaplex-linux-arm64-musl: 1.0.0
+      mediaplex-linux-riscv64-gnu: 1.0.0
+      mediaplex-linux-x64-gnu: 1.0.0
+      mediaplex-linux-x64-musl: 1.0.0
+      mediaplex-win32-arm64-msvc: 1.0.0
+      mediaplex-win32-ia32-msvc: 1.0.0
+      mediaplex-win32-x64-msvc: 1.0.0
+
   memorystream@0.3.1: {}
 
   merge-descriptors@1.0.3: {}
@@ -10603,6 +10783,8 @@ snapshots:
       type-check: 0.4.0
       word-wrap: 1.2.5
 
+  opusscript@0.1.1: {}
+
   ora@3.4.0:
     dependencies:
       chalk: 2.4.2
@@ -10924,7 +11106,9 @@ snapshots:
 
   pretty-format@3.8.0: {}
 
-  prism-media@1.3.5: {}
+  prism-media@1.3.5(opusscript@0.1.1):
+    optionalDependencies:
+      opusscript: 0.1.1
 
   process-nextick-args@2.0.1: {}
 
