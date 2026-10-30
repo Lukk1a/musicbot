@@ -274,7 +274,8 @@ export class MusicService {
 					requestedBy: auth.member.user,
 				})
 
-				console.log(`[MusicService] Successfully queued: "${playResult.track.title}"`)
+				const trackTitle = playResult.track?.title ?? action.query
+				console.log(`[MusicService] Successfully queued: "${trackTitle}"`)
 				break
 			}
 

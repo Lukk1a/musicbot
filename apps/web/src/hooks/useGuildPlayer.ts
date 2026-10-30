@@ -158,6 +158,7 @@ export function useGuildPlayer(guildId: string) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(action),
+          signal: AbortSignal.timeout(25000),
         })
 
         if (!res.ok) {

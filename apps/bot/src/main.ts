@@ -75,6 +75,13 @@ try {
 	}
 }
 
+import { BaseInteraction } from 'discord.js'
+if (BaseInteraction && !(BaseInteraction.prototype as any).isPrimaryEntryPointCommand) {
+	(BaseInteraction.prototype as any).isPrimaryEntryPointCommand = function() {
+		return false
+	}
+}
+
 import { container } from 'tsyringe'
 import { constructor } from 'tsyringe/dist/typings/types'
 

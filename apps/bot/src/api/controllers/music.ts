@@ -68,6 +68,7 @@ export class MusicController extends BaseController {
 			throw new BadRequest('Invalid control action payload: action and userId are required.')
 
 		const musicService = await this.getMusicService()
+		console.log(`[MusicController] Verifying voice permissions for user ${actionPayload.userId} in guild ${guildId}...`)
 		const auth = await musicService.verifyMemberVoice(guildId, actionPayload.userId)
 		if (!auth.authorized) {
 			console.warn(`[MusicController] Voice check failed for user ${actionPayload.userId} in guild ${guildId}: ${auth.error}`)
@@ -75,7 +76,10 @@ export class MusicController extends BaseController {
 		}
 
 		try {
-			return await musicService.executeAction(guildId, actionPayload)
+			console.log(`[MusicController] Executing action "${actionPayload.action}" for guild ${guildId}...`)
+			const result = await musicService.executeAction(guildId, actionPayload)
+			console.log(`[MusicController] Action "${actionPayload.action}" completed successfully!`)
+			return result
 		}
 		catch (error) {
 			const message = error instanceof Error ? error.message : 'Action execution failed.'
