@@ -35,6 +35,35 @@ export interface VoiceVerificationResult {
 	botVoiceChannel?: VoiceBasedChannel | null
 }
 
+/**
+ * Safe wrapper around YoutubeExtractor from discord-player-youtubei.
+ * Prevents discord-player-youtubei from blindly validating non-YouTube links
+ * (e.g. Spotify, SoundCloud, Apple Music) which broke Spotify & other external extractors.
+ */
+class SafeYoutubeiExtractor extends YoutubeiExtractor {
+
+	override async validate(query: string, type?: any): Promise<boolean> {
+		if (typeof query === 'string') {
+			if (/^(https?:\/\/)?(open\.)?spotify\.com\//i.test(query) || /^spotify:/i.test(query)) {
+				return false
+			}
+			if (/^(https?:\/\/)?(www\.)?soundcloud\.com\//i.test(query)) {
+				return false
+			}
+			if (/^(https?:\/\/)?(music\.)?apple\.com\//i.test(query)) {
+				return false
+			}
+		}
+
+		if (type && typeof type === 'string' && (type.startsWith('spotify') || type.startsWith('appleMusic') || type.startsWith('soundcloud'))) {
+			return false
+		}
+
+		return super.validate(query, type)
+	}
+
+}
+
 @Service()
 export class MusicService {
 
@@ -59,8 +88,8 @@ export class MusicService {
 				skipFFmpeg: false,
 			})
 
-			await this.player.extractors.register(YoutubeiExtractor, {})
 			await this.player.extractors.loadDefault()
+			await this.player.extractors.register(SafeYoutubeiExtractor, {})
 			this.registerPlayerEvents(this.player)
 			this.isInitialized = true
 
