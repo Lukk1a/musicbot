@@ -19,6 +19,9 @@ importers:
       '@discord-player/extractor':
         specifier: ^4.5.1
         version: 4.5.1(encoding@0.1.14)
+      '@discord-player/opus':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@discordjs/voice':
         specifier: ^0.19.2
         version: 0.19.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.11.3)(opusscript@0.1.1)
@@ -511,6 +514,9 @@ packages:
 
   '@discord-player/ffmpeg@0.1.0':
     resolution: {integrity: sha512-0kW6q4gMQN2B4Z4EzmUgXrKQSXXmyhjdZBBZ/6jSHZ9fh814oOu+JXP01VvtWHwTylI7qJHIctEWtSyjEubCJg==}
+
+  '@discord-player/opus@0.1.2':
+    resolution: {integrity: sha512-yF0m+pW7H9RCbRcgk/i6vv47tlWxaCHjp6/F0W4GXZMGZ0pcvZaxk8ic7aFPc3+IoDvrAHvWNomLq+JeFzdncA==}
 
   '@discord-player/utils@0.2.2':
     resolution: {integrity: sha512-UklWUT7BcZEkBgywM9Cmpo2nwj3SQ9Wmhu6ml1uy/YRQnY8IRdZEHD84T2kfjOg4LVZek0ej1VerIqq7a9PAHQ==}
@@ -6541,6 +6547,8 @@ snapshots:
       - encoding
 
   '@discord-player/ffmpeg@0.1.0': {}
+
+  '@discord-player/opus@0.1.2': {}
 
   '@discord-player/utils@0.2.2':
     dependencies:
