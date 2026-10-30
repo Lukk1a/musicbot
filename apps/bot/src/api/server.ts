@@ -35,13 +35,17 @@ export class Server {
 		this.app
 			.use(bodyParser.json())
 			.use(bodyParser.urlencoded({ extended: true }))
-			.use((req: any, _res: any, next: any) => {
-				console.log('[Server Middleware] Content-Type:', req.headers['content-type'], 'Body:', req.body)
-				next()
-			})
 			.use(Log)
 			.use(PlatformAcceptMimesMiddleware)
 
+		return null
+	}
+
+	$afterRoutesInit() {
+		this.app.use((err: any, _req: any, _res: any, next: any) => {
+			console.error('[API Server Error caught]:', err)
+			next(err)
+		})
 		return null
 	}
 
@@ -52,10 +56,6 @@ export class Server {
 			httpPort: env.API_PORT,
 			httpsPort: false,
 			acceptMimes: ['application/json'],
-			middlewares: [
-				bodyParser.json(),
-				bodyParser.urlencoded({ extended: true }),
-			],
 			mount: {
 				'/': [...Object.values(controllers), ...this.pluginsManager.getControllers()],
 			},
