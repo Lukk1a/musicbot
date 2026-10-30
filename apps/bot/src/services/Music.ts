@@ -477,6 +477,110 @@ export class MusicService {
 	}
 
 	/**
+	 * Play or queue a list of tracks (e.g. from a Server Playlist or Spotify Playlist) into the voice channel.
+	 */
+	public async playTrackList(
+		guildId: string,
+		userId: string,
+		tracks: Array<{ url: string; title: string }>
+	): Promise<GuildPlayerState> {
+		if (!tracks.length) {
+			throw new Error('Playlist has no tracks to play.')
+		}
+
+		const player = await this.getPlayer()
+		const auth = await this.verifyMemberVoice(guildId, userId)
+		if (!auth.authorized || !auth.member || !auth.voiceChannel) {
+			throw new Error(auth.error || 'Voice authorization failed.')
+		}
+
+		let defaultVolume = 100
+		let twentyFourSeven = false
+		try {
+			const db = await resolveDependency(Database) as Database
+			const config = await db.get(GuildMusicConfig).findOne({ guildId })
+			if (config) {
+				defaultVolume = config.defaultVolume ?? 100
+				twentyFourSeven = config.twentyFourSeven ?? false
+			}
+		}
+		catch (err) {
+			console.warn(`[MusicService] Could not retrieve GuildMusicConfig for ${guildId}:`, err)
+		}
+
+		const first = tracks[0]
+		const firstIsUrl = first.url.startsWith('http://') || first.url.startsWith('https://')
+		let firstResult = await player.search(first.url, {
+			requestedBy: auth.member.user,
+			searchEngine: firstIsUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH,
+		}).catch(() => null)
+
+		if (!firstResult || !firstResult.tracks.length) {
+			firstResult = await player.search(first.title, {
+				requestedBy: auth.member.user,
+				searchEngine: QueryType.AUTO,
+			}).catch(() => null)
+		}
+
+		if (!firstResult || !firstResult.tracks.length) {
+			throw new Error(`Could not find the first track "${first.title}".`)
+		}
+
+		await player.play(auth.voiceChannel, firstResult, {
+			nodeOptions: {
+				metadata: {
+					voiceChannel: auth.voiceChannel,
+					member: auth.member,
+				},
+				volume: defaultVolume,
+				leaveOnEmpty: !twentyFourSeven,
+				leaveOnEmptyCooldown: 300000,
+				leaveOnEnd: !twentyFourSeven,
+				leaveOnEndCooldown: 300000,
+				bufferingTimeout: 10000,
+				connectionTimeout: 30000,
+				disableBiquad: true,
+				disableEqualizer: true,
+				disableFilterer: true,
+				disableResampler: true,
+			},
+			requestedBy: auth.member.user,
+		})
+
+		const queue = player.nodes.get(guildId)
+		if (queue && tracks.length > 1) {
+			for (let i = 1; i < tracks.length; i++) {
+				const item = tracks[i]
+				try {
+					const isUrl = item.url.startsWith('http://') || item.url.startsWith('https://')
+					let itemResult = await player.search(item.url, {
+						requestedBy: auth.member.user,
+						searchEngine: isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH,
+					}).catch(() => null)
+
+					if (!itemResult || !itemResult.tracks.length) {
+						itemResult = await player.search(item.title, {
+							requestedBy: auth.member.user,
+							searchEngine: QueryType.AUTO,
+						}).catch(() => null)
+					}
+
+					if (itemResult && itemResult.tracks.length) {
+						queue.addTrack(itemResult.tracks[0])
+					}
+				}
+				catch (trackErr) {
+					console.warn(`[MusicService] Failed to queue "${item.title}":`, trackErr)
+				}
+			}
+		}
+
+		const updatedState = this.getSerializedState(guildId)
+		this.socketService.emitPlayerState(guildId, updatedState)
+		return updatedState
+	}
+
+	/**
 	 * Retrieve the single source of truth serialized player state for a guild.
 	 * @param guildId Discord Guild ID
 	 */

@@ -12,6 +12,12 @@ export class GuildMusicConfig extends CustomBaseEntity {
 	@Property({ nullable: true, type: 'string' })
 	djRoleId?: string | null = null
 
+	@Property({ nullable: true, type: 'string' })
+	playlistEditorRoleId?: string | null = null
+
+	@Property({ type: 'boolean', default: false })
+	allowPublicContributions: boolean = false
+
 	@Property({ type: 'number', default: 100 })
 	defaultVolume: number = 100
 

@@ -1,6 +1,7 @@
+// apps/web/src/app/page.tsx
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import { Disc3, Radio, Shield, Sparkles } from 'lucide-react'
+import { Disc, Radio, Shield, Sparkles, Music2 } from 'lucide-react'
 
 import { authOptions } from '@/lib/auth'
 import { LoginButton } from '@/components/LoginButton'
@@ -19,29 +20,28 @@ export default async function HomePage({
   const error = resolvedSearchParams?.error
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-      {/* Background gradients */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-accent/20 rounded-full blur-[128px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px] pointer-events-none" />
+    <main className="flex min-h-screen flex-col items-center justify-center p-6 text-center relative overflow-hidden bg-black text-[#ededed]">
+      {/* Subtle Geist Monochrome Background Glows */}
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-zinc-800/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="relative z-10 max-w-3xl flex flex-col items-center gap-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-surface text-xs text-slate-300 font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Real-Time Discord Music Bot & Live Dashboard</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-950/80 text-xs text-zinc-300 font-medium">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Discord Audio Engine & Spotify Collaborative Web Player</span>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-accent to-purple-500 flex items-center justify-center shadow-lg shadow-accent/25">
-            <Disc3 className="w-8 h-8 text-white animate-spin-slow" />
+          <div className="w-14 h-14 rounded-2xl bg-white text-black flex items-center justify-center shadow-2xl">
+            <Disc className="w-8 h-8" />
           </div>
-          <h1 className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-            Harmonia
+          <h1 className="text-5xl font-extrabold tracking-tight text-white">
+            Monotone
           </h1>
         </div>
 
-        <p className="text-lg text-slate-400 max-w-xl leading-relaxed">
-          Stream music directly into your Discord voice channels with seamless 
-          real-time synchronization between Discord slash commands and your personal web dashboard.
+        <p className="text-base sm:text-lg text-zinc-400 max-w-xl leading-relaxed">
+          High-fidelity music streaming for Discord with live Spotify account linking, collaborative server mixes, and real-time dashboard controls.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center mt-2">
@@ -58,20 +58,20 @@ export default async function HomePage({
 
         {/* Feature badges */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mt-12 text-left">
-          <div className="p-4 rounded-xl border border-border bg-surface/50 backdrop-blur-sm">
-            <Radio className="w-6 h-6 text-accent mb-2" />
-            <h3 className="text-sm font-semibold text-white">Live WebSockets</h3>
-            <p className="text-xs text-slate-400 mt-1">250ms smooth progress interpolation and instant room state updates.</p>
+          <div className="p-5 rounded-xl border border-zinc-900 bg-zinc-950/60 backdrop-blur-sm">
+            <Music2 className="w-5 h-5 text-emerald-400 mb-2" />
+            <h3 className="text-sm font-semibold text-white">Spotify Integration</h3>
+            <p className="text-xs text-zinc-400 mt-1">Connect your Spotify library to play your saved tracks & playlists directly in voice.</p>
           </div>
-          <div className="p-4 rounded-xl border border-border bg-surface/50 backdrop-blur-sm">
-            <Shield className="w-6 h-6 text-purple-400 mb-2" />
-            <h3 className="text-sm font-semibold text-white">Voice Channel Security</h3>
-            <p className="text-xs text-slate-400 mt-1">Enforced DJ roles and mutual voice channel verification.</p>
+          <div className="p-5 rounded-xl border border-zinc-900 bg-zinc-950/60 backdrop-blur-sm">
+            <Radio className="w-5 h-5 text-white mb-2" />
+            <h3 className="text-sm font-semibold text-white">Collaborative Mixes</h3>
+            <p className="text-xs text-zinc-400 mt-1">Build server-wide playlists together with contributor tracking and role-based permissions.</p>
           </div>
-          <div className="p-4 rounded-xl border border-border bg-surface/50 backdrop-blur-sm">
-            <Disc3 className="w-6 h-6 text-emerald-400 mb-2" />
-            <h3 className="text-sm font-semibold text-white">Universal Sources</h3>
-            <p className="text-xs text-slate-400 mt-1">YouTube, Spotify, SoundCloud, Apple Music, and direct streams.</p>
+          <div className="p-5 rounded-xl border border-zinc-900 bg-zinc-950/60 backdrop-blur-sm">
+            <Shield className="w-5 h-5 text-zinc-400 mb-2" />
+            <h3 className="text-sm font-semibold text-white">Voice & DJ Security</h3>
+            <p className="text-xs text-zinc-400 mt-1">Verified channel presence and customizable DJ / editor role enforcement.</p>
           </div>
         </div>
       </div>

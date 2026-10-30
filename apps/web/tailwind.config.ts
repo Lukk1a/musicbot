@@ -1,3 +1,4 @@
+// apps/web/tailwind.config.ts
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
@@ -10,14 +11,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#090a0f',
-        surface: '#12141c',
-        'surface-hover': '#1a1d29',
-        border: '#222634',
-        accent: {
-          DEFAULT: '#6366f1',
-          hover: '#4f46e5',
+        background: '#000000',
+        surface: '#0c0c0e',
+        'surface-elevated': '#141416',
+        'surface-hover': '#1c1c1f',
+        border: '#222226',
+        'border-subtle': '#18181b',
+        spotify: {
+          DEFAULT: '#1DB954',
+          hover: '#1ed760',
+          dark: '#14833b',
         },
+        accent: {
+          DEFAULT: '#ffffff',
+          hover: '#e4e4e7',
+          muted: '#71717a',
+        },
+      },
+      fontFamily: {
+        sans: [
+          'Geist',
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif',
+        ],
       },
     },
   },

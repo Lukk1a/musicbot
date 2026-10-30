@@ -20,11 +20,11 @@ export default async function GuildPlayerPage({ params }: PageProps) {
   const { guildId } = await params
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col">
+    <div className="h-screen w-screen overflow-hidden bg-black text-[#ededed] flex flex-col">
       <Navbar />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <GuildPlayerDashboard guildId={guildId} />
-      </main>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <GuildPlayerDashboard guildId={guildId} currentUserId={session.user.id} />
+      </div>
     </div>
   )
 }

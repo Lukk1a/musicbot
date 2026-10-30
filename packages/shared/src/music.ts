@@ -68,3 +68,74 @@ export interface MutualGuildStatus {
   currentTrack: SerializedTrack | null
   memberCount?: number
 }
+
+export interface ServerPlaylistTrack {
+  id: string
+  title: string
+  author: string
+  duration: string
+  durationMS: number
+  thumbnail: string
+  url: string
+  addedBy: {
+    id: string
+    username: string
+    avatar?: string
+  }
+  addedAt: number
+}
+
+export interface ServerPlaylist {
+  id: string
+  guildId: string
+  name: string
+  description?: string | null
+  createdBy: {
+    id: string
+    username: string
+    avatar?: string
+  }
+  tracks: ServerPlaylistTrack[]
+  createdAt?: Date | string | number
+  updatedAt?: Date | string | number
+}
+
+export interface GuildMusicConfigData {
+  guildId: string
+  djRoleId: string | null
+  playlistEditorRoleId: string | null
+  allowPublicContributions: boolean
+  defaultVolume: number
+  twentyFourSeven: boolean
+  textChannelId: string | null
+}
+
+export interface SpotifyUserProfile {
+  id: string
+  display_name: string
+  email?: string
+  images?: { url: string; height?: number; width?: number }[]
+}
+
+export interface SpotifyUserPlaylist {
+  id: string
+  name: string
+  description: string | null
+  images: { url: string; height?: number; width?: number }[]
+  owner: { display_name: string; id: string }
+  tracks: { total: number }
+  external_urls: { spotify: string }
+}
+
+export interface SpotifyTrackItem {
+  id: string
+  name: string
+  artists: { name: string; id: string }[]
+  album: {
+    name: string
+    images: { url: string; height?: number; width?: number }[]
+  }
+  duration_ms: number
+  external_urls: { spotify: string }
+  uri: string
+}

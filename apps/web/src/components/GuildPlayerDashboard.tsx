@@ -1,167 +1,411 @@
 // apps/web/src/components/GuildPlayerDashboard.tsx
 'use client'
 
-import React from 'react'
-import Link from 'next/link'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-  ArrowLeft,
-  RefreshCw,
+  AlertCircle,
+  X,
+  Radio,
   Wifi,
   WifiOff,
-  Volume2,
-  AlertTriangle,
-  XCircle,
-  Radio,
 } from 'lucide-react'
+import type {
+  GuildMusicConfigData,
+  ServerPlaylist,
+  SpotifyTrackItem,
+  SpotifyUserPlaylist,
+  SpotifyUserProfile,
+} from '@musicbot/shared'
 import { useGuildPlayer } from '@/hooks/useGuildPlayer'
-import { PlayerCard } from '@/components/PlayerCard'
-import { TrackSearch } from '@/components/TrackSearch'
-import { QueueList } from '@/components/QueueList'
+import { SidebarLibrary } from '@/components/SidebarLibrary'
+import { MainStage } from '@/components/MainStage'
+import { LiveQueuePanel } from '@/components/LiveQueuePanel'
+import { SpotifyPlayerBar } from '@/components/SpotifyPlayerBar'
+import { RoleSettingsModal } from '@/components/RoleSettingsModal'
+import { CreateMixModal } from '@/components/CreateMixModal'
 
 interface GuildPlayerDashboardProps {
   guildId: string
+  currentUserId?: string
 }
 
-export function GuildPlayerDashboard({ guildId }: GuildPlayerDashboardProps) {
+export function GuildPlayerDashboard({ guildId, currentUserId }: GuildPlayerDashboardProps) {
   const {
     playerState,
     interpolatedPosition,
-    isLoading,
     isActionLoading,
     isConnected,
-    error,
+    error: playerError,
     clearError,
     sendControl,
-    refresh,
   } = useGuildPlayer(guildId)
 
+  // 1. Navigation & View State
+  const [activeTab, setActiveTab] = useState<'mixes' | 'spotify'>('mixes')
+  const [currentType, setCurrentType] = useState<
+    'server-mix' | 'spotify-playlist' | 'liked-songs'
+  >('server-mix')
+
+  // 2. Server Mixes State
+  const [serverMixes, setServerMixes] = useState<ServerPlaylist[]>([])
+  const [selectedServerPlaylist, setSelectedServerPlaylist] = useState<ServerPlaylist | null>(null)
+  const [guildConfig, setGuildConfig] = useState<GuildMusicConfigData | null>(null)
+
+  // 3. Spotify State
+  const [spotifyUser, setSpotifyUser] = useState<SpotifyUserProfile | null>(null)
+  const [spotifyPlaylists, setSpotifyPlaylists] = useState<SpotifyUserPlaylist[]>([])
+  const [selectedSpotifyPlaylist, setSelectedSpotifyPlaylist] = useState<SpotifyUserPlaylist | null>(null)
+  const [spotifyTracks, setSpotifyTracks] = useState<SpotifyTrackItem[]>([])
+  const [likedTracks, setLikedTracks] = useState<SpotifyTrackItem[]>([])
+  const [isLikedSongsSelected, setIsLikedSongsSelected] = useState(false)
+  const [isLoadingTracks, setIsLoadingTracks] = useState(false)
+
+  // 4. Modal States
+  const [isCreateMixOpen, setIsCreateMixOpen] = useState(false)
+  const [isRoleSettingsOpen, setIsRoleSettingsOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Load Guild Server Mixes & Music Config
+  const fetchServerMixesAndConfig = useCallback(async () => {
+    try {
+      const [mixesRes, configRes] = await Promise.all([
+        fetch(`/api/music/${guildId}/playlists`),
+        fetch(`/api/music/${guildId}/config`),
+      ])
+
+      if (mixesRes.ok) {
+        const mixes: ServerPlaylist[] = await mixesRes.json()
+        setServerMixes(mixes)
+        if (mixes.length > 0 && !selectedServerPlaylist) {
+          setSelectedServerPlaylist(mixes[0])
+        }
+      }
+
+      if (configRes.ok) {
+        const cfg: GuildMusicConfigData = await configRes.json()
+        setGuildConfig(cfg)
+      }
+    } catch (err) {
+      console.error('[GuildPlayerDashboard] Error fetching server mixes/config:', err)
+    }
+  }, [guildId, selectedServerPlaylist])
+
+  // Load Spotify Profile & Data
+  const checkSpotifyStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/spotify/status')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.connected && data.user) {
+          setSpotifyUser(data.user)
+
+          // Fetch user playlists and liked songs in parallel
+          const [plRes, likedRes] = await Promise.all([
+            fetch('/api/spotify/playlists'),
+            fetch('/api/spotify/liked'),
+          ])
+
+          if (plRes.ok) {
+            const pls: SpotifyUserPlaylist[] = await plRes.json()
+            setSpotifyPlaylists(pls)
+          }
+          if (likedRes.ok) {
+            const lk: SpotifyTrackItem[] = await likedRes.json()
+            setLikedTracks(lk)
+          }
+        } else {
+          setSpotifyUser(null)
+          setSpotifyPlaylists([])
+          setLikedTracks([])
+        }
+      }
+    } catch (err) {
+      console.error('[GuildPlayerDashboard] Error checking Spotify status:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchServerMixesAndConfig()
+    checkSpotifyStatus()
+  }, [fetchServerMixesAndConfig, checkSpotifyStatus])
+
+  // Handlers for Selecting Content in Sidebar
+  const handleSelectServerPlaylist = (playlist: ServerPlaylist) => {
+    setSelectedServerPlaylist(playlist)
+    setSelectedSpotifyPlaylist(null)
+    setIsLikedSongsSelected(false)
+    setCurrentType('server-mix')
+  }
+
+  const handleSelectSpotifyPlaylist = async (playlist: SpotifyUserPlaylist) => {
+    setSelectedSpotifyPlaylist(playlist)
+    setIsLikedSongsSelected(false)
+    setCurrentType('spotify-playlist')
+    setIsLoadingTracks(true)
+
+    try {
+      const res = await fetch(`/api/spotify/playlists/${playlist.id}/tracks`)
+      if (res.ok) {
+        const tracks: SpotifyTrackItem[] = await res.json()
+        setSpotifyTracks(tracks)
+      }
+    } catch (err) {
+      console.error('Failed to load Spotify playlist tracks:', err)
+    } finally {
+      setIsLoadingTracks(false)
+    }
+  }
+
+  const handleSelectLikedSongs = () => {
+    setIsLikedSongsSelected(true)
+    setSelectedSpotifyPlaylist(null)
+    setCurrentType('liked-songs')
+  }
+
+  const handleDisconnectSpotify = async () => {
+    try {
+      await fetch('/api/spotify/disconnect', { method: 'POST' })
+      setSpotifyUser(null)
+      setSpotifyPlaylists([])
+      setLikedTracks([])
+      if (currentType !== 'server-mix') {
+        setCurrentType('server-mix')
+      }
+    } catch (err) {
+      console.error('Failed to disconnect Spotify:', err)
+    }
+  }
+
+  // Playback Control Handlers
+  const handlePlayTrack = async (track: { url: string; title: string }) => {
+    setErrorMessage(null)
+    try {
+      await sendControl({ action: 'play', query: track.url })
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Playback error')
+    }
+  }
+
+  const handleQueueTrack = async (track: { url: string; title: string }) => {
+    setErrorMessage(null)
+    try {
+      await sendControl({ action: 'play', query: track.url })
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Queue error')
+    }
+  }
+
+  const handlePlayAll = async (tracks: Array<{ url: string; title: string }>) => {
+    setErrorMessage(null)
+    if (!tracks.length) return
+
+    try {
+      const res = await fetch(`/api/music/${guildId}/batch-play`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tracks }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to start batch playback.')
+      }
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Batch playback error')
+    }
+  }
+
+  // Server Mix Modification Handlers
+  const handleAddTrackToServerMix = async (track: {
+    title: string
+    author: string
+    duration: string
+    durationMS: number
+    thumbnail: string
+    url: string
+  }) => {
+    if (!selectedServerPlaylist) return
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch(`/api/music/${guildId}/playlists/${selectedServerPlaylist.id}/tracks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ track }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to add track to server mix.')
+      }
+
+      const updated: ServerPlaylist = await res.json()
+      setSelectedServerPlaylist(updated)
+      setServerMixes((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to add track')
+      throw err
+    }
+  }
+
+  const handleDeleteServerTrack = async (trackIndex: number) => {
+    if (!selectedServerPlaylist) return
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch(
+        `/api/music/${guildId}/playlists/${selectedServerPlaylist.id}/tracks/${trackIndex}`,
+        { method: 'DELETE' }
+      )
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to remove track.')
+      }
+
+      const updated: ServerPlaylist = await res.json()
+      setSelectedServerPlaylist(updated)
+      setServerMixes((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to remove track')
+    }
+  }
+
+  const handleDeleteServerMix = async () => {
+    if (!selectedServerPlaylist) return
+    const confirmed = window.confirm(`Are you sure you want to delete "${selectedServerPlaylist.name}"?`)
+    if (!confirmed) return
+
+    try {
+      const res = await fetch(`/api/music/${guildId}/playlists/${selectedServerPlaylist.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to delete server mix.')
+      }
+
+      const remaining = serverMixes.filter((m) => m.id !== selectedServerPlaylist.id)
+      setServerMixes(remaining)
+      setSelectedServerPlaylist(remaining[0] || null)
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to delete mix')
+    }
+  }
+
+  const handlePlaylistCreated = (newPlaylist: ServerPlaylist) => {
+    setServerMixes((prev) => [newPlaylist, ...prev])
+    setSelectedServerPlaylist(newPlaylist)
+    setCurrentType('server-mix')
+  }
+
+  const activeError = errorMessage || playerError
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Top Bar / Navigation and Status */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors text-sm font-medium"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>All Servers</span>
-          </Link>
-
-          <div className="flex items-center gap-2 pl-2">
-            <span className="text-zinc-500 text-sm">/</span>
-            <span className="text-sm font-semibold text-white tracking-wide font-mono">
-              Server {guildId}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Voice Channel Status Badge */}
-          {playerState.voiceChannelName ? (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-              <Volume2 className="w-3.5 h-3.5" />
-              <span>{playerState.voiceChannelName}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 text-xs font-medium">
-              <Radio className="w-3.5 h-3.5" />
-              <span>No Voice Channel</span>
-            </div>
-          )}
-
-          {/* WebSocket Connection Status */}
-          <div
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-              isConnected
-                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-700/30'
-                : 'bg-amber-950/40 text-amber-300 border-amber-700/30'
-            }`}
-          >
-            {isConnected ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <Wifi className="w-3.5 h-3.5" />
-                <span>Live Socket</span>
-              </>
-            ) : (
-              <>
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                <WifiOff className="w-3.5 h-3.5" />
-                <span>Reconnecting...</span>
-              </>
-            )}
-          </div>
-
-          {/* Manual Refresh Button */}
-          <button
-            onClick={() => refresh()}
-            disabled={isLoading}
-            title="Refresh player state"
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Error / Warning Alert */}
-      {error && (
-        <div className="flex items-start justify-between gap-3 p-4 rounded-xl bg-rose-950/40 border border-rose-800/40 text-rose-200 text-sm backdrop-blur-sm animate-in fade-in">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-rose-300">Action Failed</p>
-              <p className="text-rose-200/90 text-xs mt-0.5">{error}</p>
-              <p className="text-rose-400/80 text-[11px] mt-1">
-                Note: To control the player, you must be in the exact same voice channel as the bot
-                (or have DJ / Administrator permissions).
-              </p>
-            </div>
+    <div className="relative h-full w-full flex flex-col bg-black text-[#ededed] overflow-hidden">
+      {/* Top Banner Alert (for error or voice notices) */}
+      {activeError && (
+        <div className="bg-red-950/80 border-b border-red-800/40 text-red-200 px-4 py-2 text-xs flex items-center justify-between z-30 shrink-0">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <span>{activeError}</span>
           </div>
           <button
-            onClick={clearError}
-            className="text-rose-400 hover:text-white p-1 rounded-lg hover:bg-rose-900/40 transition-colors"
+            onClick={() => {
+              setErrorMessage(null)
+              clearError()
+            }}
+            className="text-red-400 hover:text-white"
           >
-            <XCircle className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Main Grid: Player Card on Left/Top, Search and Queue on Right/Bottom */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (Player & Controls) */}
-        <div className="lg:col-span-5 flex flex-col gap-6 sticky top-24">
-          <PlayerCard
-            playerState={playerState}
-            position={interpolatedPosition}
-            isActionLoading={isActionLoading}
-            onAction={sendControl}
-          />
-        </div>
+      {/* 3-PANEL SPOTIFY APP SHELL */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        {/* PANEL 1: Left Library Sidebar */}
+        <SidebarLibrary
+          guildId={guildId}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          serverMixes={serverMixes}
+          selectedServerPlaylist={selectedServerPlaylist}
+          onSelectServerPlaylist={handleSelectServerPlaylist}
+          spotifyUser={spotifyUser}
+          spotifyPlaylists={spotifyPlaylists}
+          selectedSpotifyPlaylist={selectedSpotifyPlaylist}
+          onSelectSpotifyPlaylist={handleSelectSpotifyPlaylist}
+          onSelectLikedSongs={handleSelectLikedSongs}
+          isLikedSongsSelected={isLikedSongsSelected}
+          onOpenCreateMix={() => setIsCreateMixOpen(true)}
+          onOpenRoleSettings={() => setIsRoleSettingsOpen(true)}
+          onDisconnectSpotify={handleDisconnectSpotify}
+        />
 
-        {/* Right Column (Search & Queue List) */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <TrackSearch
-            onAddTrack={async (query: string) => {
-              return await sendControl({ action: 'play', query })
-            }}
-            disabled={isActionLoading}
-          />
+        {/* PANEL 2: Main Center Stage */}
+        <MainStage
+          currentType={currentType}
+          serverPlaylist={selectedServerPlaylist}
+          spotifyPlaylist={selectedSpotifyPlaylist}
+          spotifyTracks={spotifyTracks}
+          likedTracks={likedTracks}
+          isLoadingTracks={isLoadingTracks}
+          currentUserId={currentUserId}
+          onPlayTrack={handlePlayTrack}
+          onQueueTrack={handleQueueTrack}
+          onPlayAll={handlePlayAll}
+          onAddTrackToServerMix={handleAddTrackToServerMix}
+          onDeleteServerTrack={handleDeleteServerTrack}
+          onDeleteServerMix={handleDeleteServerMix}
+        />
 
-          <QueueList
-            queue={playerState.queue}
+        {/* PANEL 3: Right Live Queue Panel */}
+        <div className="hidden xl:block">
+          <LiveQueuePanel
             currentTrack={playerState.currentTrack}
-            onJumpTo={async (index: number) => {
-              return await sendControl({ action: 'jumpTo', trackIndex: index })
+            queue={playerState.queue}
+            onJumpTo={async (idx) => {
+              await sendControl({ action: 'jumpTo', trackIndex: idx })
+              return true
             }}
-            onRemoveTrack={async (index: number) => {
-              return await sendControl({ action: 'removeTrack', trackIndex: index })
+            onRemoveTrack={async (idx) => {
+              await sendControl({ action: 'removeTrack', trackIndex: idx })
+              return true
+            }}
+            onShuffle={async () => {
+              await sendControl({ action: 'shuffle' })
             }}
             disabled={isActionLoading}
           />
         </div>
       </div>
+
+      {/* PINNED BOTTOM SPOTIFY PLAYER BAR */}
+      <SpotifyPlayerBar
+        playerState={playerState}
+        interpolatedPosition={interpolatedPosition}
+        sendControl={sendControl}
+        isConnected={isConnected}
+        isActionLoading={isActionLoading}
+      />
+
+      {/* MODALS */}
+      <CreateMixModal
+        isOpen={isCreateMixOpen}
+        onClose={() => setIsCreateMixOpen(false)}
+        guildId={guildId}
+        onPlaylistCreated={handlePlaylistCreated}
+      />
+
+      <RoleSettingsModal
+        isOpen={isRoleSettingsOpen}
+        onClose={() => setIsRoleSettingsOpen(false)}
+        guildId={guildId}
+        currentConfig={guildConfig}
+        onConfigSaved={(updated) => setGuildConfig(updated)}
+      />
     </div>
   )
 }

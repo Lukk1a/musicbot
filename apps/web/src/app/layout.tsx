@@ -1,10 +1,14 @@
+// apps/web/src/app/layout.tsx
 import type { Metadata } from 'next'
 import { Providers } from './providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Harmonia | Discord Music Bot Dashboard',
-  description: 'Real-time web player and queue manager for Harmonia Discord Music Bot',
+  title: 'Monotone | Discord Music & Web Player',
+  description: 'High-fidelity Discord music bot with Spotify integration and collaborative server mixes',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
@@ -14,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-accent selection:text-white">
+      <body className="min-h-screen bg-black text-[#ededed] antialiased selection:bg-zinc-800 selection:text-white">
         <Providers>{children}</Providers>
       </body>
     </html>
