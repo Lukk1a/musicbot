@@ -1,11 +1,11 @@
 // apps/bot/src/commands/Music/play.ts
-import { Category } from '@/decorators'
-import { ApplicationCommandOptionType, CommandInteraction, EmbedBuilder } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import { injectable } from 'tsyringe'
 
-import { Discord, Guard, Slash, SlashOption } from '@/decorators'
+import { Category, Discord, Guard, Slash, SlashOption } from '@/decorators'
 import { GuildOnly, InVoiceChannel } from '@/guards'
 import { MusicService } from '@/services/Music'
+import { replyErrorContainer, replyMusicContainer } from '@/utils/functions'
 
 @Discord()
 @injectable()
@@ -46,24 +46,18 @@ export default class PlayCommand {
 			})
 
 			const current = state.currentTrack
-			const embed = new EmbedBuilder()
-				.setColor(0x5865F2)
-				.setTitle(state.queue.length > 0 && current?.title !== query ? 'ðŸŽ¶ Added to Queue' : 'â–¶ Now Playing')
-				.setDescription(`[${current?.title || query}](${current?.url || ''})`)
-				.addFields(
-					{ name: 'Author', value: current?.author || 'Unknown', inline: true },
-					{ name: 'Duration', value: current?.duration || 'Unknown', inline: true },
-					{ name: 'Queue Size', value: `${state.queue.length} track(s)`, inline: true }
-				)
+			const isQueueAdd = state.queue.length > 0 && current?.title !== query
+			const header = isQueueAdd ? '### 🎵 Added to Queue' : '### ▶ Now Playing'
+			const trackTitle = current?.title || query
+			const trackLink = current?.url ? `[**${trackTitle}**](${current.url})` : `**${trackTitle}**`
 
-			if (current?.thumbnail)
-				embed.setThumbnail(current.thumbnail)
+			const text = `${header}\n${trackLink}\n\n**Author:** ${current?.author || 'Unknown'} • **Duration:** \`${current?.duration || 'Unknown'}\` • **Queue:** \`${state.queue.length} track(s)\`\n-# Requested by <@${userId}>`
 
-			await interaction.followUp({ embeds: [embed] })
+			await replyMusicContainer(interaction, text)
 		}
 		catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to play track.'
-			await interaction.followUp({ content: `âŒ ${message}` })
+			await replyErrorContainer(interaction, 'Playback Error', message)
 		}
 	}
 

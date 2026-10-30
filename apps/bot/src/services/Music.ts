@@ -86,10 +86,16 @@ export class MusicService {
 
 			this.player = new Player(client as unknown as import('discord.js').Client<true>, {
 				skipFFmpeg: false,
+				connectionTimeout: 30000,
 			})
 
-			await this.player.extractors.loadDefault()
-			await this.player.extractors.register(SafeYoutubeiExtractor, {})
+			// Exclude scraping-based legacy YouTubeExtractor (ytdl-core) so SafeYoutubeiExtractor is used exclusively
+			await this.player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor')
+			await this.player.extractors.register(SafeYoutubeiExtractor, {
+				streamOptions: {
+					highWaterMark: 1 << 25,
+				},
+			})
 			this.registerPlayerEvents(this.player)
 			this.isInitialized = true
 
@@ -329,6 +335,12 @@ export class MusicService {
 						leaveOnEmptyCooldown: 300000,
 						leaveOnEnd: !twentyFourSeven,
 						leaveOnEndCooldown: 300000,
+						bufferingTimeout: 10000,
+						connectionTimeout: 30000,
+						disableBiquad: true,
+						disableEqualizer: true,
+						disableFilterer: true,
+						disableResampler: true,
 					},
 					requestedBy: auth.member.user,
 				})

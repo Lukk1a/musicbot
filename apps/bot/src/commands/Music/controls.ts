@@ -1,11 +1,11 @@
 // apps/bot/src/commands/Music/controls.ts
-import { Category } from '@/decorators'
 import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import { injectable } from 'tsyringe'
 
-import { Discord, Guard, Slash, SlashChoice, SlashOption } from '@/decorators'
+import { Category, Discord, Guard, Slash, SlashChoice, SlashOption } from '@/decorators'
 import { GuildOnly, InVoiceChannel } from '@/guards'
 import { MusicService } from '@/services/Music'
+import { replyErrorContainer, replyMusicContainer, replySuccessContainer } from '@/utils/functions'
 
 @Discord()
 @injectable()
@@ -30,11 +30,11 @@ export default class ControlsCommand {
 				action: 'pause',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: 'â¸ Playback paused.' })
+			await replyMusicContainer(interaction, '### ⏸ Playback Paused\nAudio playback has been paused. Use `/resume` to continue.', 0xFEE75C)
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to pause playback.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
@@ -52,11 +52,11 @@ export default class ControlsCommand {
 				action: 'resume',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: 'â–¶ Playback resumed.' })
+			await replySuccessContainer(interaction, 'Playback Resumed', 'Resumed audio playback.')
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to resume playback.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
@@ -74,11 +74,11 @@ export default class ControlsCommand {
 				action: 'skip',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: 'â­ Skipped track.' })
+			await replyMusicContainer(interaction, '### ⏭ Track Skipped\nSkipped to the next track in the queue.')
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to skip track.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
@@ -96,11 +96,11 @@ export default class ControlsCommand {
 				action: 'stop',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: 'â¹ Playback stopped and queue cleared.' })
+			await replyMusicContainer(interaction, '### ⏹ Playback Stopped\nPlayback stopped, queue cleared, and bot disconnected.', 0xED4245)
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to stop playback.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
@@ -118,11 +118,11 @@ export default class ControlsCommand {
 				action: 'shuffle',
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: 'ðŸ”€ Queue shuffled.' })
+			await replyMusicContainer(interaction, '### 🔀 Queue Shuffled\nRandomized the order of all tracks in the queue.')
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to shuffle queue.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
@@ -152,11 +152,11 @@ export default class ControlsCommand {
 				value: level,
 				userId: interaction.user.id,
 			})
-			await interaction.followUp({ content: `ðŸ”Š Volume set to **${level}%**.` })
+			await replyMusicContainer(interaction, `### 🔊 Volume Updated\nPlayback volume adjusted to **${level}%**.`)
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to set volume.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
@@ -192,11 +192,11 @@ export default class ControlsCommand {
 			})
 
 			const labels = ['Disabled (Off)', 'Current Track', 'Entire Queue', 'Autoplay']
-			await interaction.followUp({ content: `ðŸ” Loop mode set to **${labels[mode]}**.` })
+			await replyMusicContainer(interaction, `### 🔁 Loop Mode Changed\nLoop mode set to **${labels[mode]}**.`)
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to update loop mode.'
-			await interaction.followUp({ content: `âŒ ${msg}` })
+			await replyErrorContainer(interaction, 'Action Failed', msg)
 		}
 	}
 
