@@ -1,5 +1,5 @@
 // apps/bot/src/api/controllers/music.ts
-import { BodyParams, Controller, Get, PathParams, Post, QueryParams, Req, UseBefore } from '@tsed/common'
+import { Context, Controller, Get, PathParams, PlatformContext, Post, QueryParams, UseBefore } from '@tsed/common'
 import { BadRequest, Forbidden, NotFound } from '@tsed/exceptions'
 import { Client } from 'discordx'
 
@@ -56,13 +56,9 @@ export class MusicController extends BaseController {
 	@Post('/:guildId/control')
 	async control(
 		@PathParams('guildId') guildId: string,
-		@BodyParams() body: any,
-		@Req() req: any
+		@Context() ctx: PlatformContext
 	): Promise<GuildPlayerState> {
-		let actionPayload = (req?.body && Object.keys(req.body).length > 0) ? req.body : body
-		if ((!actionPayload || Object.keys(actionPayload).length === 0) && typeof req?.rawBody === 'string') {
-			try { actionPayload = JSON.parse(req.rawBody) } catch {}
-		}
+		const actionPayload = ctx.request.body as PlayerControlAction
 		console.log('[MusicController] POST control received, guildId:', guildId, 'payload:', actionPayload)
 		if (!guildId)
 			throw new BadRequest('Guild ID is required.')
