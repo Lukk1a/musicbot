@@ -53,7 +53,7 @@ export class MusicService {
 		try {
 			const client = await resolveDependency(Client)
 
-			this.player = new Player(client as unknown as Client<true>, {
+			this.player = new Player(client as unknown as import('discord.js').Client<true>, {
 				skipFFmpeg: false,
 			})
 
