@@ -2,21 +2,29 @@ import { Middleware } from '@tsed/common'
 import { InternalServerError } from '@tsed/exceptions'
 import { Client } from 'discordx'
 
-import { resolveDependencies } from '@/utils/functions'
+import { resolveDependency } from '@/utils/functions'
 
 @Middleware()
 export class BotOnline {
 
-	private client: Client
+	private client: Client | null = null
 
 	constructor() {
-		resolveDependencies([Client]).then(([client]) => {
+		resolveDependency(Client).then((client) => {
 			this.client = client
-		})
+		}).catch(() => null)
 	}
 
 	async use() {
-		if (this.client.user?.presence.status === 'offline')
+		if (!this.client) {
+			try {
+				this.client = await resolveDependency(Client)
+			} catch {
+				throw new InternalServerError('Discord client is not ready')
+			}
+		}
+
+		if (this.client?.user?.presence?.status === 'offline')
 			throw new InternalServerError('Bot is offline')
 	}
 

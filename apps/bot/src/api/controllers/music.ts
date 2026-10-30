@@ -59,7 +59,10 @@ export class MusicController extends BaseController {
 		@BodyParams() body: any,
 		@Req() req: any
 	): Promise<GuildPlayerState> {
-		const actionPayload = (req?.body && Object.keys(req.body).length > 0) ? req.body : body
+		let actionPayload = (req?.body && Object.keys(req.body).length > 0) ? req.body : body
+		if ((!actionPayload || Object.keys(actionPayload).length === 0) && typeof req?.rawBody === 'string') {
+			try { actionPayload = JSON.parse(req.rawBody) } catch {}
+		}
 		console.log('[MusicController] POST control received, guildId:', guildId, 'payload:', actionPayload)
 		if (!guildId)
 			throw new BadRequest('Guild ID is required.')

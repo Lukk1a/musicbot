@@ -52,6 +52,10 @@ export class Server {
 			httpPort: env.API_PORT,
 			httpsPort: false,
 			acceptMimes: ['application/json'],
+			middlewares: [
+				bodyParser.json(),
+				bodyParser.urlencoded({ extended: true }),
+			],
 			mount: {
 				'/': [...Object.values(controllers), ...this.pluginsManager.getControllers()],
 			},
