@@ -46,6 +46,13 @@ export class Database {
 
 			// migrate to the latest migration
 			await this._orm.getMigrator().up()
+
+			try {
+				await this._orm.getSchemaGenerator().updateSchema()
+			}
+			catch (schemaErr) {
+				this.logger.log(`SchemaGenerator update error: ${schemaErr}`, 'warn')
+			}
 		}
 	}
 
