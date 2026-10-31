@@ -15,8 +15,16 @@ import {
   Loader2,
   ExternalLink,
   Sparkles,
+  Link2,
 } from 'lucide-react'
-import type { ServerPlaylist, SpotifyUserPlaylist, SpotifyTrackItem, SerializedTrack } from '@musicbot/shared'
+import type {
+  AddServerPlaylistTracksResponse,
+  ServerPlaylist,
+  ServerPlaylistTrack,
+  SpotifyUserPlaylist,
+  SpotifyTrackItem,
+  SerializedTrack,
+} from '@musicbot/shared'
 import { formatTime } from '@/lib/utils'
 
 interface MainStageProps {
@@ -31,14 +39,18 @@ interface MainStageProps {
   onPlayTrack: (track: { url: string; title: string }) => Promise<void>
   onQueueTrack: (track: { url: string; title: string }) => Promise<void>
   onPlayAll: (tracks: Array<{ url: string; title: string }>) => Promise<void>
-  onAddTrackToServerMix?: (track: {
+  onAddTrackToServerMix?: (payload: {
+    query?: string
+    track?: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+    tracks?: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+  } | {
     title: string
     author: string
     duration: string
     durationMS: number
     thumbnail: string
     url: string
-  }) => Promise<void>
+  }) => Promise<AddServerPlaylistTracksResponse | void>
   onDeleteServerTrack?: (trackIndex: number) => Promise<void>
   onDeleteServerMix?: () => Promise<void>
 }
@@ -62,6 +74,42 @@ export function MainStage({
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddingSearch, setIsAddingSearch] = useState(false)
   const [statusNotice, setStatusNotice] = useState<string | null>(null)
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isMix) return
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!isMix) return
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setIsDraggingOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isMix) return
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingOver(false)
+
+    const rawData =
+      e.dataTransfer.getData('text/uri-list') ||
+      e.dataTransfer.getData('text/plain') ||
+      e.dataTransfer.getData('text') ||
+      ''
+    const droppedUrl = rawData.split('\n')[0].trim()
+
+    if (droppedUrl) {
+      setSearchQuery(droppedUrl)
+      setStatusNotice('Link captured! Click "Add to Mix" to import songs.')
+      setTimeout(() => setStatusNotice(null), 5000)
+    }
+  }
 
   // Live Auto-complete / Search Suggestions
   const [searchResults, setSearchResults] = useState<SerializedTrack[]>([])
@@ -146,14 +194,16 @@ export function MainStage({
     try {
       if (isMix && onAddTrackToServerMix) {
         await onAddTrackToServerMix({
-          title: track.title,
-          author: track.author,
-          duration: track.duration,
-          durationMS: track.durationMS,
-          thumbnail: track.thumbnail,
-          url: track.url,
+          track: {
+            title: track.title,
+            author: track.author,
+            duration: track.duration,
+            durationMS: track.durationMS,
+            thumbnail: track.thumbnail,
+            url: track.url,
+          },
         })
-        setStatusNotice(`Added "${track.title}" to Server Mix!`)
+        setStatusNotice(`✓ Added "${track.title}" to Server Mix!`)
       } else {
         await onQueueTrack({ url: track.url, title: `${track.title} - ${track.author}` })
         setStatusNotice(`Queued "${track.title}" in Discord!`)
@@ -178,58 +228,51 @@ export function MainStage({
     setStatusNotice(null)
 
     try {
-      // First, attempt to resolve via live search results or search API so real metadata is saved
-      let resolvedTrack: SerializedTrack | null = null
-      if (searchResults.length > 0) {
-        resolvedTrack = searchResults[0]
-      } else if (guildId) {
-        try {
-          const res = await fetch(`/api/music/${guildId}/search?query=${encodeURIComponent(query)}`)
-          if (res.ok) {
-            const data: SerializedTrack[] = await res.json()
-            if (data.length > 0) {
-              resolvedTrack = data[0]
-            }
-          }
-        } catch {
-          // Fall back to direct query
-        }
-      }
-
       if (isMix && onAddTrackToServerMix) {
-        if (resolvedTrack) {
-          await onAddTrackToServerMix({
-            title: resolvedTrack.title,
-            author: resolvedTrack.author,
-            duration: resolvedTrack.duration,
-            durationMS: resolvedTrack.durationMS,
-            thumbnail: resolvedTrack.thumbnail,
-            url: resolvedTrack.url,
-          })
-          setStatusNotice(`Added "${resolvedTrack.title}" by ${resolvedTrack.author}!`)
+        const isUrl = query.startsWith('http://') || query.startsWith('https://')
+        setStatusNotice(isUrl ? 'Resolving link and importing songs to Server Mix...' : 'Resolving and adding song...')
+
+        const res = await onAddTrackToServerMix({ query })
+        const addedCount = res && typeof res === 'object' && 'addedCount' in res ? (res.addedCount ?? 1) : 1
+
+        if (addedCount > 1) {
+          setStatusNotice(`✓ Successfully added ${addedCount} songs to Server Mix!`)
         } else {
-          // Backend PlaylistService will auto-resolve before saving to DB
-          await onAddTrackToServerMix({
-            title: query,
-            author: 'Added via Search',
-            duration: '--:--',
-            durationMS: 0,
-            thumbnail: '',
-            url: query,
-          })
-          setStatusNotice(`Added "${query}" to Server Mix!`)
+          const lastTrack = res && typeof res === 'object' && 'tracks' in res && Array.isArray(res.tracks)
+            ? res.tracks[res.tracks.length - 1]
+            : null
+          const songName = lastTrack?.title || (searchResults[0]?.title) || query
+          setStatusNotice(`✓ Successfully added "${songName}" to Server Mix!`)
         }
+
+        setSearchQuery('')
+        setTimeout(() => setStatusNotice(null), 5000)
       } else {
+        let resolvedTrack: SerializedTrack | null = null
+        if (searchResults.length > 0) {
+          resolvedTrack = searchResults[0]
+        } else if (guildId) {
+          try {
+            const res = await fetch(`/api/music/${guildId}/search?query=${encodeURIComponent(query)}`)
+            if (res.ok) {
+              const data: SerializedTrack[] = await res.json()
+              if (data.length > 0) {
+                resolvedTrack = data[0]
+              }
+            }
+          } catch {
+            // Fall back to direct query
+          }
+        }
         const playUrl = resolvedTrack?.url || query
         const playTitle = resolvedTrack ? `${resolvedTrack.title} - ${resolvedTrack.author}` : query
         await onQueueTrack({ url: playUrl, title: playTitle })
         setStatusNotice(`Queued "${playTitle}" in Discord!`)
+        setSearchQuery('')
+        setTimeout(() => setStatusNotice(null), 4000)
       }
-
-      setSearchQuery('')
-      setTimeout(() => setStatusNotice(null), 4000)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to add song.'
+      const msg = err instanceof Error ? err.message : 'Failed to add songs.'
       setStatusNotice(msg)
     } finally {
       setIsAddingSearch(false)
@@ -259,7 +302,25 @@ export function MainStage({
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-black text-[#ededed] pb-28">
+    <main
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="relative flex-1 overflow-y-auto bg-black text-[#ededed] pb-28"
+    >
+      {/* DRAG AND DROP OVERLAY FOR SERVER MIX */}
+      {isMix && isDraggingOver && (
+        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-sm border-2 border-dashed border-[#1DB954] rounded-2xl flex flex-col items-center justify-center p-8 pointer-events-none transition-all">
+          <div className="w-16 h-16 rounded-full bg-[#1DB954]/10 border border-[#1DB954]/30 flex items-center justify-center mb-4 text-[#1DB954] animate-bounce">
+            <Link2 className="w-8 h-8" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-1">Drop Link to Add to Server Mix</h3>
+          <p className="text-sm text-zinc-400 text-center max-w-md">
+            Release your Spotify, YouTube, or SoundCloud link here, then click &quot;Add to Mix&quot; to import songs!
+          </p>
+        </div>
+      )}
+
       {/* HEADER BANNER */}
       <div className="relative p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-end gap-6 bg-gradient-to-b from-zinc-900/80 to-black border-b border-[#222226]">
         {/* Cover Art Box */}
@@ -334,7 +395,7 @@ export function MainStage({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
                   isMix
-                    ? 'Search song title, artist, or YouTube/Spotify link to add...'
+                    ? 'Drop or paste a Spotify/YouTube link, or search song title...'
                     : 'Search or paste a link to play in Discord voice...'
                 }
                 className="w-full pl-10 pr-9 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
@@ -349,11 +410,16 @@ export function MainStage({
               className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-xl transition-all disabled:opacity-40 shrink-0"
             >
               {isAddingSearch ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{isMix ? 'Adding to Mix...' : 'Adding...'}</span>
+                </>
               ) : (
-                <Plus className="w-3.5 h-3.5" />
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isMix ? 'Add to Mix' : 'Play in Voice'}</span>
+                </>
               )}
-              <span>{isMix ? 'Add to Mix' : 'Play in Voice'}</span>
             </button>
           </form>
 
@@ -414,7 +480,11 @@ export function MainStage({
         </div>
 
         {statusNotice && (
-          <div className="mt-3 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 rounded-lg px-3 py-1.5 flex items-center justify-between max-w-2xl">
+          <div className={`mt-3 text-xs rounded-lg px-3 py-1.5 flex items-center justify-between max-w-2xl ${
+            statusNotice.toLowerCase().includes('failed') || statusNotice.toLowerCase().includes('error')
+              ? 'text-red-400 bg-red-950/30 border border-red-800/40'
+              : 'text-emerald-400 bg-emerald-950/30 border border-emerald-800/40'
+          }`}>
             <span>{statusNotice}</span>
             <button onClick={() => setStatusNotice(null)} className="text-zinc-500 hover:text-white">
               ✕
@@ -435,7 +505,10 @@ export function MainStage({
           (serverPlaylist.tracks || []).length === 0 ? (
             <div className="py-16 text-center text-zinc-500 text-xs flex flex-col items-center gap-2 border border-dashed border-zinc-900 rounded-2xl">
               <Disc className="w-8 h-8 text-zinc-700" />
-              <span>No songs in this Server Mix yet. Use the bar above to add some!</span>
+              <span className="font-medium text-zinc-400">No songs in this Server Mix yet.</span>
+              <span className="text-zinc-500 max-w-sm">
+                Drop a Spotify, YouTube, or SoundCloud playlist or track link above and click &quot;Add to Mix&quot; to import songs!
+              </span>
             </div>
           ) : (
             <div className="table-wrapper">

@@ -100,6 +100,20 @@ export interface ServerPlaylist {
   updatedAt?: Date | string | number
 }
 
+export interface AddServerPlaylistTracksPayload {
+  userId?: string
+  username?: string
+  avatar?: string
+  track?: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+  tracks?: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+  query?: string
+}
+
+export interface AddServerPlaylistTracksResponse extends ServerPlaylist {
+  addedCount?: number
+  isPlaylist?: boolean
+}
+
 export interface GuildMusicConfigData {
   guildId: string
   djRoleId: string | null

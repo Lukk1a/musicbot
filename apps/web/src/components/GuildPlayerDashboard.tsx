@@ -10,8 +10,10 @@ import {
   WifiOff,
 } from 'lucide-react'
 import type {
+  AddServerPlaylistTracksResponse,
   GuildMusicConfigData,
   ServerPlaylist,
+  ServerPlaylistTrack,
   SpotifyTrackItem,
   SpotifyUserPlaylist,
   SpotifyUserProfile,
@@ -216,22 +218,30 @@ export function GuildPlayerDashboard({ guildId, currentUserId }: GuildPlayerDash
   }
 
   // Server Mix Modification Handlers
-  const handleAddTrackToServerMix = async (track: {
+  const handleAddTrackToServerMix = async (payload: {
+    query?: string
+    track?: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+    tracks?: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+  } | {
     title: string
     author: string
     duration: string
     durationMS: number
     thumbnail: string
     url: string
-  }) => {
-    if (!selectedServerPlaylist) return
+  }): Promise<AddServerPlaylistTracksResponse> => {
+    if (!selectedServerPlaylist) throw new Error('No server mix selected')
     setErrorMessage(null)
+
+    const bodyPayload = 'title' in payload && 'url' in payload
+      ? { track: payload }
+      : payload
 
     try {
       const res = await fetch(`/api/music/${guildId}/playlists/${selectedServerPlaylist.id}/tracks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ track }),
+        body: JSON.stringify(bodyPayload),
       })
 
       if (!res.ok) {
@@ -239,9 +249,10 @@ export function GuildPlayerDashboard({ guildId, currentUserId }: GuildPlayerDash
         throw new Error(data.error || 'Failed to add track to server mix.')
       }
 
-      const updated: ServerPlaylist = await res.json()
+      const updated: AddServerPlaylistTracksResponse = await res.json()
       setSelectedServerPlaylist(updated)
       setServerMixes((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
+      return updated
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to add track')
       throw err

@@ -21,11 +21,13 @@ export async function POST(req: NextRequest, { params }: RouteProps) {
   try {
     const { guildId, playlistId } = await params
     const body = (await req.json()) as {
-      track: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+      track?: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+      tracks?: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+      query?: string
     }
 
-    if (!body.track || !body.track.url) {
-      return NextResponse.json({ error: 'Track details and URL are required' }, { status: 400 })
+    if (!body.track && !body.tracks && !body.query) {
+      return NextResponse.json({ error: 'Track details, tracks array, or search/link query are required' }, { status: 400 })
     }
 
     const playlist = await addTrackToServerPlaylist(guildId, playlistId, {
@@ -33,6 +35,8 @@ export async function POST(req: NextRequest, { params }: RouteProps) {
       username: session.user.name || 'Anonymous',
       avatar: session.user.image || undefined,
       track: body.track,
+      tracks: body.tracks,
+      query: body.query,
     })
 
     return NextResponse.json(playlist)

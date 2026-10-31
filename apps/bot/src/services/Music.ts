@@ -198,11 +198,67 @@ export class MusicService {
 	}
 
 	/**
+	 * Resolve query or link into serialized tracks.
+	 * If the query or link is a playlist or album, returns all resolved tracks (up to maxTracks).
+	 * If it is a single track or search term, returns the single top match.
+	 */
+	public async resolveTracks(
+		query: string,
+		maxTracks = 100
+	): Promise<{ isPlaylist: boolean; title?: string; tracks: SerializedTrack[] }> {
+		if (!query || !query.trim())
+			return { isPlaylist: false, tracks: [] }
+
+		const player = await this.getPlayer()
+		const trimmed = query.trim()
+		const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+
+		let searchResult = await player.search(trimmed, {
+			searchEngine: isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH,
+		}).catch(() => null)
+
+		if ((!searchResult || !searchResult.tracks.length) && !isUrl) {
+			searchResult = await player.search(trimmed, {
+				searchEngine: QueryType.SOUNDCLOUD_SEARCH,
+			}).catch(() => null)
+		}
+
+		if (!searchResult || !searchResult.tracks.length) {
+			searchResult = await player.search(trimmed, {
+				searchEngine: QueryType.AUTO,
+			}).catch(() => null)
+		}
+
+		if (!searchResult || !searchResult.tracks.length) {
+			return { isPlaylist: false, tracks: [] }
+		}
+
+		const isPlaylist = typeof searchResult.hasPlaylist === 'function'
+			? searchResult.hasPlaylist()
+			: Boolean(searchResult.playlist)
+		const playlistTitle = searchResult.playlist?.title || undefined
+
+		const tracksToSerialize = isPlaylist
+			? searchResult.tracks.slice(0, maxTracks)
+			: [searchResult.tracks[0]]
+
+		const tracks = tracksToSerialize
+			.map(t => this.serializeTrack(t))
+			.filter((t): t is SerializedTrack => t !== null)
+
+		return {
+			isPlaylist,
+			title: playlistTitle,
+			tracks,
+		}
+	}
+
+	/**
 	 * Resolve a single track's full metadata from a query or URL.
 	 */
 	public async resolveTrack(query: string): Promise<SerializedTrack | null> {
-		const results = await this.searchTracks(query, 1)
-		return results[0] ?? null
+		const res = await this.resolveTracks(query, 1)
+		return res.tracks[0] ?? null
 	}
 
 	/**

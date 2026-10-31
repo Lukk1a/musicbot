@@ -275,7 +275,7 @@ export class MusicController extends BaseController {
 		@PathParams('guildId') guildId: string,
 		@PathParams('playlistId') playlistId: string,
 		@Context() ctx: PlatformContext
-	): Promise<ServerPlaylist> {
+	): Promise<ServerPlaylist & { addedCount?: number; isPlaylist?: boolean }> {
 		if (!guildId || !playlistId)
 			throw new BadRequest('Guild ID and Playlist ID are required.')
 
@@ -284,21 +284,61 @@ export class MusicController extends BaseController {
 			username?: string
 			avatar?: string
 			track?: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+			tracks?: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+			query?: string
 		}
 
-		if (!body || !body.userId || !body.username || !body.track)
-			throw new BadRequest('Missing required parameters: userId, username, and track are required.')
+		if (!body || !body.userId || !body.username || (!body.track && !body.tracks && !body.query))
+			throw new BadRequest('Missing required parameters: userId, username, and either track, tracks, or query are required.')
 
 		const playlistService = await this.getPlaylistService()
 		try {
-			return await playlistService.addTrack(
-				guildId,
-				playlistId,
-				body.userId,
-				body.username,
-				body.avatar,
-				body.track
-			)
+			if (body.query) {
+				const result = await playlistService.addQueryOrLink(
+					guildId,
+					playlistId,
+					body.userId,
+					body.username,
+					body.avatar,
+					body.query
+				)
+				return Object.assign(result.playlist, {
+					addedCount: result.addedCount,
+					isPlaylist: result.isPlaylist,
+				})
+			}
+
+			if (body.tracks && Array.isArray(body.tracks) && body.tracks.length > 0) {
+				const result = await playlistService.addTracks(
+					guildId,
+					playlistId,
+					body.userId,
+					body.username,
+					body.avatar,
+					body.tracks
+				)
+				return Object.assign(result.playlist, {
+					addedCount: result.addedCount,
+					isPlaylist: true,
+				})
+			}
+
+			if (body.track) {
+				const playlist = await playlistService.addTrack(
+					guildId,
+					playlistId,
+					body.userId,
+					body.username,
+					body.avatar,
+					body.track
+				)
+				return Object.assign(playlist, {
+					addedCount: 1,
+					isPlaylist: false,
+				})
+			}
+
+			throw new BadRequest('One of track, tracks, or query is required.')
 		}
 		catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to add track.'

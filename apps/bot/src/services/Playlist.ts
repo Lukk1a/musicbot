@@ -233,6 +233,113 @@ export class PlaylistService {
 	}
 
 	/**
+	 * Add songs from a query or link (including full Spotify/YouTube playlists/albums) to a Server Mix.
+	 */
+	public async addQueryOrLink(
+		guildId: string,
+		playlistId: string,
+		userId: string,
+		username: string,
+		avatar: string | undefined,
+		queryOrLink: string
+	): Promise<{ playlist: ServerPlaylist; addedCount: number; isPlaylist: boolean; title?: string }> {
+		const perms = await this.checkPermissions(guildId, userId)
+		const playlist = await this.getPlaylist(guildId, playlistId)
+		if (!playlist) {
+			throw new Error('Playlist not found.')
+		}
+
+		const isCreator = playlist.createdBy.id === userId
+		if (!perms.allowPublicContributions && !isCreator && !perms.canEditPlaylists) {
+			throw new Error('You do not have permission to add tracks to this playlist.')
+		}
+
+		const resolved = await this.musicService.resolveTracks(queryOrLink, 100)
+		if (!resolved.tracks.length) {
+			throw new Error(`Could not find any playable songs for "${queryOrLink}". Please verify the link or query.`)
+		}
+
+		const now = Date.now()
+		const newTracks: ServerPlaylistTrack[] = resolved.tracks.map(t => ({
+			id: uuidv4(),
+			title: t.title,
+			author: t.author,
+			duration: t.duration,
+			durationMS: t.durationMS,
+			thumbnail: t.thumbnail,
+			url: t.url,
+			addedBy: {
+				id: userId,
+				username,
+				avatar,
+			},
+			addedAt: now,
+		}))
+
+		playlist.tracks.push(...newTracks)
+		await this.db.em.persistAndFlush(playlist)
+
+		return {
+			playlist,
+			addedCount: newTracks.length,
+			isPlaylist: resolved.isPlaylist,
+			title: resolved.title || newTracks[0]?.title,
+		}
+	}
+
+	/**
+	 * Add multiple tracks to a Server Mix playlist in batch.
+	 */
+	public async addTracks(
+		guildId: string,
+		playlistId: string,
+		userId: string,
+		username: string,
+		avatar: string | undefined,
+		tracks: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+	): Promise<{ playlist: ServerPlaylist; addedCount: number }> {
+		const perms = await this.checkPermissions(guildId, userId)
+		const playlist = await this.getPlaylist(guildId, playlistId)
+		if (!playlist) {
+			throw new Error('Playlist not found.')
+		}
+
+		const isCreator = playlist.createdBy.id === userId
+		if (!perms.allowPublicContributions && !isCreator && !perms.canEditPlaylists) {
+			throw new Error('You do not have permission to add tracks to this playlist.')
+		}
+
+		if (!tracks.length) {
+			throw new Error('No tracks provided.')
+		}
+
+		const now = Date.now()
+		const newTracks: ServerPlaylistTrack[] = tracks.map(t => ({
+			id: uuidv4(),
+			title: t.title,
+			author: t.author,
+			duration: t.duration,
+			durationMS: t.durationMS,
+			thumbnail: t.thumbnail,
+			url: t.url,
+			addedBy: {
+				id: userId,
+				username,
+				avatar,
+			},
+			addedAt: now,
+		}))
+
+		playlist.tracks.push(...newTracks)
+		await this.db.em.persistAndFlush(playlist)
+
+		return {
+			playlist,
+			addedCount: newTracks.length,
+		}
+	}
+
+	/**
 	 * Add a track to a Server Mix playlist with automatic metadata resolution.
 	 */
 	public async addTrack(

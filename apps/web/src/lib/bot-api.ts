@@ -1,5 +1,6 @@
 // apps/web/src/lib/bot-api.ts
 import type {
+  AddServerPlaylistTracksResponse,
   GuildMusicConfigData,
   GuildPlayerState,
   MutualGuildStatus,
@@ -120,10 +121,12 @@ export async function addTrackToServerPlaylist(
     userId: string
     username: string
     avatar?: string
-    track: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+    track?: Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>
+    tracks?: Array<Omit<ServerPlaylistTrack, 'id' | 'addedBy' | 'addedAt'>>
+    query?: string
   }
-): Promise<ServerPlaylist> {
-  return botFetch<ServerPlaylist>(`/music/${guildId}/playlists/${playlistId}/tracks`, {
+): Promise<AddServerPlaylistTracksResponse> {
+  return botFetch<AddServerPlaylistTracksResponse>(`/music/${guildId}/playlists/${playlistId}/tracks`, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
