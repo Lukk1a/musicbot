@@ -22,8 +22,9 @@ interface LiveQueuePanelProps {
   disabled?: boolean
 }
 
-function formatTotalDuration(tracks: SerializedTrack[]): string {
-  const totalMs = tracks.reduce((acc, t) => acc + (t.durationMS || 0), 0)
+function formatTotalDuration(tracks: SerializedTrack[] = []): string {
+  const safeTracks = Array.isArray(tracks) ? tracks : []
+  const totalMs = safeTracks.reduce((acc, t) => acc + (t?.durationMS || 0), 0)
   const totalSeconds = Math.floor(totalMs / 1000)
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
@@ -37,12 +38,13 @@ function formatTotalDuration(tracks: SerializedTrack[]): string {
 
 export function LiveQueuePanel({
   currentTrack,
-  queue,
+  queue = [],
   onJumpTo,
   onRemoveTrack,
   onShuffle,
   disabled = false,
 }: LiveQueuePanelProps) {
+  const safeQueue = Array.isArray(queue) ? queue.filter(Boolean) : []
   return (
     <aside className="w-80 h-full flex flex-col bg-[#0c0c0e] border-l border-[#222226] text-zinc-300 select-none pb-28">
       {/* Header */}
@@ -51,14 +53,14 @@ export function LiveQueuePanel({
           <ListMusic className="w-4 h-4 text-white" />
           <h3 className="font-semibold text-sm text-white tracking-tight">Queue</h3>
           <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
-            {queue.length}
+            {safeQueue.length}
           </span>
         </div>
 
-        {queue.length > 0 && (
+        {safeQueue.length > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono text-zinc-500">
-              {formatTotalDuration(queue)}
+              {formatTotalDuration(safeQueue)}
             </span>
             <button
               onClick={onShuffle}
@@ -112,13 +114,13 @@ export function LiveQueuePanel({
           Up Next
         </span>
 
-        {queue.length === 0 ? (
+        {safeQueue.length === 0 ? (
           <div className="p-6 text-center text-zinc-500 text-xs flex flex-col items-center gap-2 my-auto">
             <ListMusic className="w-6 h-6 text-zinc-700" />
             <span>The queue is empty</span>
           </div>
         ) : (
-          queue.map((track, idx) => (
+          safeQueue.map((track, idx) => (
             <div
               key={`${track.id || track.url}-${idx}`}
               className="group flex items-center justify-between gap-2.5 p-2 rounded-lg hover:bg-zinc-900 transition-colors"

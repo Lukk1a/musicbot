@@ -113,19 +113,67 @@ export class PlaylistService {
 	}
 
 	/**
-	 * List all Server Mix playlists for a guild.
+	 * Automatically repair any tracks with placeholder metadata on-the-fly.
 	 */
-	public async getPlaylists(guildId: string): Promise<ServerPlaylist[]> {
-		return this.db.get(ServerPlaylist).find({ guildId }, {
-			orderBy: { updatedAt: 'DESC' },
-		})
+	private async repairPlaylistTracks(playlist: ServerPlaylist): Promise<boolean> {
+		let modified = false
+		for (const track of playlist.tracks) {
+			const isPlaceholder = !track.thumbnail
+				|| track.durationMS <= 0
+				|| track.author === 'Added via Search'
+				|| track.duration === '--:--'
+				|| !track.author
+
+			if (isPlaceholder) {
+				try {
+					const queryToResolve = track.url || track.title
+					const resolved = await this.musicService.resolveTrack(queryToResolve)
+					if (resolved) {
+						track.title = resolved.title
+						track.author = resolved.author
+						track.duration = resolved.duration
+						track.durationMS = resolved.durationMS
+						track.thumbnail = resolved.thumbnail
+						track.url = resolved.url
+						modified = true
+					}
+				}
+				catch {
+					// Ignore resolution failure on background repair
+				}
+			}
+		}
+
+		if (modified) {
+			await this.db.em.persistAndFlush(playlist)
+		}
+		return modified
 	}
 
 	/**
-	 * Get a specific playlist by ID.
+	 * List all Server Mix playlists for a guild, auto-repairing placeholder tracks.
+	 */
+	public async getPlaylists(guildId: string): Promise<ServerPlaylist[]> {
+		const playlists = await this.db.get(ServerPlaylist).find({ guildId }, {
+			orderBy: { updatedAt: 'DESC' },
+		})
+
+		for (const pl of playlists) {
+			await this.repairPlaylistTracks(pl).catch(() => false)
+		}
+
+		return playlists
+	}
+
+	/**
+	 * Get a specific playlist by ID, auto-repairing placeholder tracks.
 	 */
 	public async getPlaylist(guildId: string, playlistId: string): Promise<ServerPlaylist | null> {
-		return this.db.get(ServerPlaylist).findOne({ guildId, id: playlistId })
+		const playlist = await this.db.get(ServerPlaylist).findOne({ guildId, id: playlistId })
+		if (playlist) {
+			await this.repairPlaylistTracks(playlist).catch(() => false)
+		}
+		return playlist
 	}
 
 	/**
@@ -185,7 +233,7 @@ export class PlaylistService {
 	}
 
 	/**
-	 * Add a track to a Server Mix playlist.
+	 * Add a track to a Server Mix playlist with automatic metadata resolution.
 	 */
 	public async addTrack(
 		guildId: string,
@@ -206,14 +254,46 @@ export class PlaylistService {
 			throw new Error('You do not have permission to add tracks to this playlist.')
 		}
 
+		let finalTitle = track.title
+		let finalAuthor = track.author
+		let finalDuration = track.duration
+		let finalDurationMS = track.durationMS
+		let finalThumbnail = track.thumbnail
+		let finalUrl = track.url
+
+		// If metadata is incomplete (placeholder values or raw search queries), resolve real song metadata
+		const isPlaceholder = !finalThumbnail
+			|| finalDurationMS <= 0
+			|| finalAuthor === 'Added via Search'
+			|| finalDuration === '--:--'
+			|| !finalAuthor
+
+		if (isPlaceholder) {
+			try {
+				const queryToResolve = finalUrl || finalTitle
+				const resolved = await this.musicService.resolveTrack(queryToResolve)
+				if (resolved) {
+					finalTitle = resolved.title
+					finalAuthor = resolved.author
+					finalDuration = resolved.duration
+					finalDurationMS = resolved.durationMS
+					finalThumbnail = resolved.thumbnail
+					finalUrl = resolved.url
+				}
+			}
+			catch (resolveErr) {
+				console.warn(`[PlaylistService] Could not resolve metadata for "${track.title}":`, resolveErr)
+			}
+		}
+
 		const newTrack: ServerPlaylistTrack = {
 			id: uuidv4(),
-			title: track.title,
-			author: track.author,
-			duration: track.duration,
-			durationMS: track.durationMS,
-			thumbnail: track.thumbnail,
-			url: track.url,
+			title: finalTitle,
+			author: finalAuthor,
+			duration: finalDuration,
+			durationMS: finalDurationMS,
+			thumbnail: finalThumbnail,
+			url: finalUrl,
 			addedBy: {
 				id: userId,
 				username,

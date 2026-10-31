@@ -141,7 +141,7 @@ export function SpotifyPlayerBar({
           {/* Shuffle */}
           <button
             onClick={() => sendControl({ action: 'shuffle' })}
-            disabled={isActionLoading || playerState.queue.length === 0}
+            disabled={isActionLoading || (playerState?.queue?.length ?? 0) === 0}
             className="p-1.5 rounded-full text-zinc-400 hover:text-white transition-colors disabled:opacity-30"
             title="Shuffle queue"
           >

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Navbar } from '@/components/Navbar'
 import { GuildPlayerDashboard } from '@/components/GuildPlayerDashboard'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 interface PageProps {
   params: Promise<{
@@ -23,7 +24,9 @@ export default async function GuildPlayerPage({ params }: PageProps) {
     <div className="h-screen w-screen overflow-hidden bg-black text-[#ededed] flex flex-col">
       <Navbar />
       <div className="flex-1 min-h-0 overflow-hidden">
-        <GuildPlayerDashboard guildId={guildId} currentUserId={session.user.id} />
+        <ErrorBoundary fallbackTitle="Player Dashboard Error">
+          <GuildPlayerDashboard guildId={guildId} currentUserId={session.user.id} />
+        </ErrorBoundary>
       </div>
     </div>
   )

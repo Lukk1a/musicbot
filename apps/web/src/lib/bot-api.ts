@@ -4,6 +4,7 @@ import type {
   GuildPlayerState,
   MutualGuildStatus,
   PlayerControlAction,
+  SerializedTrack,
   ServerPlaylist,
   ServerPlaylistTrack,
 } from '@musicbot/shared'
@@ -160,4 +161,9 @@ export async function batchPlayTracks(
     method: 'POST',
     body: JSON.stringify({ userId, tracks }),
   })
+}
+
+export async function searchTracks(guildId: string, query: string): Promise<SerializedTrack[]> {
+  const encoded = encodeURIComponent(query)
+  return botFetch<SerializedTrack[]>(`/music/${guildId}/search?query=${encoded}`)
 }

@@ -8,7 +8,6 @@ import {
   Plus,
   Settings,
   Heart,
-  ExternalLink,
   Disc,
   LogIn,
   LogOut,
@@ -37,11 +36,11 @@ export function SidebarLibrary({
   guildId,
   activeTab,
   setActiveTab,
-  serverMixes,
+  serverMixes = [],
   selectedServerPlaylist,
   onSelectServerPlaylist,
   spotifyUser,
-  spotifyPlaylists,
+  spotifyPlaylists = [],
   selectedSpotifyPlaylist,
   onSelectSpotifyPlaylist,
   onSelectLikedSongs,
@@ -50,6 +49,9 @@ export function SidebarLibrary({
   onOpenRoleSettings,
   onDisconnectSpotify,
 }: SidebarLibraryProps) {
+  const safeMixes = Array.isArray(serverMixes) ? serverMixes.filter(Boolean) : []
+  const safeSpotifyPlaylists = Array.isArray(spotifyPlaylists) ? spotifyPlaylists.filter(Boolean) : []
+
   return (
     <aside className="w-72 lg:w-80 h-full flex flex-col bg-[#0c0c0e] border-r border-[#222226] text-zinc-300 select-none">
       {/* Top Header / Mode Switcher */}
@@ -117,10 +119,10 @@ export function SidebarLibrary({
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
               <span>Collaborative Mixes</span>
-              <span>{serverMixes.length}</span>
+              <span>{safeMixes.length}</span>
             </div>
 
-            {serverMixes.length === 0 ? (
+            {safeMixes.length === 0 ? (
               <div className="p-6 rounded-xl border border-dashed border-zinc-800/80 bg-zinc-950/40 text-center flex flex-col items-center gap-2 my-2">
                 <Users className="w-6 h-6 text-zinc-600" />
                 <p className="text-xs text-zinc-400">No server mixes yet.</p>
@@ -132,8 +134,11 @@ export function SidebarLibrary({
                 </button>
               </div>
             ) : (
-              serverMixes.map((mix) => {
+              safeMixes.map((mix) => {
                 const isSelected = selectedServerPlaylist?.id === mix.id
+                const trackCount = Array.isArray(mix?.tracks) ? mix.tracks.length : 0
+                const creatorName = mix?.createdBy?.username || 'Member'
+
                 return (
                   <button
                     key={mix.id}
@@ -148,11 +153,11 @@ export function SidebarLibrary({
                       <Disc className="w-5 h-5 text-zinc-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold truncate text-white">{mix.name}</div>
+                      <div className="text-xs font-semibold truncate text-white">{mix.name || 'Untitled Mix'}</div>
                       <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 mt-0.5">
-                        <span>{mix.tracks.length} tracks</span>
+                        <span>{trackCount} tracks</span>
                         <span>•</span>
-                        <span className="truncate">By {mix.createdBy.username}</span>
+                        <span className="truncate">By {creatorName}</span>
                       </div>
                     </div>
                   </button>
@@ -170,7 +175,7 @@ export function SidebarLibrary({
                   {spotifyUser.images?.[0]?.url ? (
                     <img
                       src={spotifyUser.images[0].url}
-                      alt={spotifyUser.display_name}
+                      alt={spotifyUser.display_name || 'Spotify'}
                       className="w-8 h-8 rounded-full object-cover ring-1 ring-[#1DB954]"
                     />
                   ) : (
@@ -180,7 +185,7 @@ export function SidebarLibrary({
                   )}
                   <div className="min-w-0">
                     <div className="text-xs font-medium text-white truncate">
-                      {spotifyUser.display_name}
+                      {spotifyUser.display_name || 'Spotify User'}
                     </div>
                     <div className="text-[10px] text-[#1DB954] font-medium flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954]" />
@@ -241,12 +246,15 @@ export function SidebarLibrary({
                 {/* Spotify Playlists List */}
                 <div className="flex flex-col gap-1 pt-1">
                   <div className="px-2 py-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-                    Playlists ({spotifyPlaylists.length})
+                    Playlists ({safeSpotifyPlaylists.length})
                   </div>
 
-                  {spotifyPlaylists.map((pl) => {
+                  {safeSpotifyPlaylists.map((pl) => {
                     const isSelected = selectedSpotifyPlaylist?.id === pl.id && !isLikedSongsSelected
-                    const imgUrl = pl.images?.[0]?.url
+                    const imgUrl = pl?.images?.[0]?.url
+                    const totalTracks = pl?.tracks?.total ?? 0
+                    const ownerName = pl?.owner?.display_name || pl?.owner?.id || 'Spotify'
+
                     return (
                       <button
                         key={pl.id}
@@ -269,9 +277,9 @@ export function SidebarLibrary({
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold truncate text-white">{pl.name}</div>
+                          <div className="text-xs font-semibold truncate text-white">{pl.name || 'Untitled Playlist'}</div>
                           <div className="text-[11px] text-zinc-500 mt-0.5">
-                            {pl.tracks.total} songs • {pl.owner.display_name}
+                            {totalTracks} songs • {ownerName}
                           </div>
                         </div>
                       </button>

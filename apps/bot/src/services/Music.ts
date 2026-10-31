@@ -39,6 +39,7 @@ export interface VoiceVerificationResult {
  * Safe wrapper around YoutubeExtractor from discord-player-youtubei.
  * Prevents discord-player-youtubei from blindly validating non-YouTube links
  * (e.g. Spotify, SoundCloud, Apple Music) which broke Spotify & other external extractors.
+ * Also provides a rock-solid bridge implementation so Spotify tracks can stream through YouTube without errors.
  */
 class SafeYoutubeiExtractor extends YoutubeiExtractor {
 
@@ -60,6 +61,28 @@ class SafeYoutubeiExtractor extends YoutubeiExtractor {
 		}
 
 		return super.validate(query, type)
+	}
+
+	override createBridgeQuery = (track: Track): string => {
+		return `${track.title} ${track.author}`
+	}
+
+	override async bridge(track: Track, sourceExtractor: any = null): Promise<any> {
+		try {
+			const query = this.createBridgeQuery(track)
+			const searchResult = await this.context.player.search(query, {
+				searchEngine: QueryType.YOUTUBE_SEARCH,
+			}).catch(() => null)
+
+			if (searchResult && searchResult.tracks.length) {
+				return await this.stream(searchResult.tracks[0])
+			}
+		}
+		catch (bridgeErr) {
+			console.warn('[SafeYoutubeiExtractor] Custom bridge error, trying default bridge:', bridgeErr)
+		}
+
+		return (super.bridge as (t: Track, s?: any) => Promise<any>)(track, sourceExtractor).catch(() => null)
 	}
 
 }
@@ -84,13 +107,31 @@ export class MusicService {
 		try {
 			const client = await resolveDependency(Client)
 
+			const spotifyClientId = process.env.DP_SPOTIFY_CLIENT_ID || process.env.SPOTIFY_CLIENT_ID || ''
+			const spotifyClientSecret = process.env.DP_SPOTIFY_CLIENT_SECRET || process.env.SPOTIFY_CLIENT_SECRET || ''
+
+			if (spotifyClientId) {
+				process.env.DP_SPOTIFY_CLIENT_ID = spotifyClientId
+			}
+			if (spotifyClientSecret) {
+				process.env.DP_SPOTIFY_CLIENT_SECRET = spotifyClientSecret
+			}
+
 			this.player = new Player(client as unknown as import('discord.js').Client<true>, {
 				skipFFmpeg: false,
 				connectionTimeout: 30000,
 			})
 
 			// Exclude scraping-based legacy YouTubeExtractor (ytdl-core) so SafeYoutubeiExtractor is used exclusively
-			await this.player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor')
+			await this.player.extractors.loadDefault(
+				(ext) => ext !== 'YouTubeExtractor',
+				{
+					SpotifyExtractor: {
+						clientId: spotifyClientId || undefined,
+						clientSecret: spotifyClientSecret || undefined,
+					},
+				}
+			)
 			await this.player.extractors.register(SafeYoutubeiExtractor, {
 				streamOptions: {
 					highWaterMark: 1 << 25,
@@ -99,7 +140,7 @@ export class MusicService {
 			this.registerPlayerEvents(this.player)
 			this.isInitialized = true
 
-			console.log('[MusicService] discord-player v6 initialized with Youtubei and default extractors.')
+			console.log('[MusicService] discord-player v6 initialized with Youtubei, Spotify credentials, and default extractors.')
 			return this.player
 		}
 		catch (error) {
@@ -116,6 +157,52 @@ export class MusicService {
 			return this.initialize()
 
 		return this.player
+	}
+
+	/**
+	 * Search for tracks across YouTube / SoundCloud / Auto without enqueuing them.
+	 * Returns full metadata: title, author, duration, durationMS, thumbnail, url.
+	 */
+	public async searchTracks(query: string, limit = 5): Promise<SerializedTrack[]> {
+		if (!query || !query.trim())
+			return []
+
+		const player = await this.getPlayer()
+		const trimmed = query.trim()
+		const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+
+		let searchResult = await player.search(trimmed, {
+			searchEngine: isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH,
+		}).catch(() => null)
+
+		if ((!searchResult || !searchResult.tracks.length) && !isUrl) {
+			searchResult = await player.search(trimmed, {
+				searchEngine: QueryType.SOUNDCLOUD_SEARCH,
+			}).catch(() => null)
+		}
+
+		if (!searchResult || !searchResult.tracks.length) {
+			searchResult = await player.search(trimmed, {
+				searchEngine: QueryType.AUTO,
+			}).catch(() => null)
+		}
+
+		if (!searchResult || !searchResult.tracks.length) {
+			return []
+		}
+
+		return searchResult.tracks
+			.slice(0, limit)
+			.map(t => this.serializeTrack(t))
+			.filter((t): t is SerializedTrack => t !== null)
+	}
+
+	/**
+	 * Resolve a single track's full metadata from a query or URL.
+	 */
+	public async resolveTrack(query: string): Promise<SerializedTrack | null> {
+		const results = await this.searchTracks(query, 1)
+		return results[0] ?? null
 	}
 
 	/**

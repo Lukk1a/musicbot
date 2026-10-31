@@ -13,6 +13,7 @@ import type {
 	GuildPlayerState,
 	MutualGuildStatus,
 	PlayerControlAction,
+	SerializedTrack,
 	ServerPlaylist,
 	ServerPlaylistTrack,
 } from '@musicbot/shared'
@@ -69,6 +70,21 @@ export class MusicController extends BaseController {
 
 		const musicService = await this.getMusicService()
 		return musicService.getSerializedState(guildId)
+	}
+
+	@Get('/:guildId/search')
+	async searchTracks(
+		@PathParams('guildId') guildId: string,
+		@QueryParams('query') query?: string
+	): Promise<SerializedTrack[]> {
+		if (!guildId)
+			throw new BadRequest('Guild ID is required.')
+
+		if (!query || !query.trim())
+			return []
+
+		const musicService = await this.getMusicService()
+		return musicService.searchTracks(query, 10)
 	}
 
 	@Post('/:guildId/control')

@@ -1,7 +1,7 @@
 // apps/web/src/components/MainStage.tsx
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Play,
   Clock,
@@ -14,11 +14,13 @@ import {
   Search,
   Loader2,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react'
-import type { ServerPlaylist, SpotifyUserPlaylist, SpotifyTrackItem } from '@musicbot/shared'
+import type { ServerPlaylist, SpotifyUserPlaylist, SpotifyTrackItem, SerializedTrack } from '@musicbot/shared'
 import { formatTime } from '@/lib/utils'
 
 interface MainStageProps {
+  guildId?: string
   currentType: 'server-mix' | 'spotify-playlist' | 'liked-songs'
   serverPlaylist: ServerPlaylist | null
   spotifyPlaylist: SpotifyUserPlaylist | null
@@ -42,11 +44,12 @@ interface MainStageProps {
 }
 
 export function MainStage({
+  guildId,
   currentType,
   serverPlaylist,
   spotifyPlaylist,
-  spotifyTracks,
-  likedTracks,
+  spotifyTracks = [],
+  likedTracks = [],
   isLoadingTracks,
   currentUserId,
   onPlayTrack,
@@ -60,7 +63,53 @@ export function MainStage({
   const [isAddingSearch, setIsAddingSearch] = useState(false)
   const [statusNotice, setStatusNotice] = useState<string | null>(null)
 
-  // Determine current playlist info
+  // Live Auto-complete / Search Suggestions
+  const [searchResults, setSearchResults] = useState<SerializedTrack[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Live debounced search
+  useEffect(() => {
+    const trimmed = searchQuery.trim()
+    if (!trimmed || trimmed.length < 2 || !guildId) {
+      setSearchResults([])
+      setIsSearching(false)
+      setShowDropdown(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const res = await fetch(`/api/music/${guildId}/search?query=${encodeURIComponent(trimmed)}`)
+        if (res.ok) {
+          const data: SerializedTrack[] = await res.json()
+          setSearchResults(data)
+          setShowDropdown(data.length > 0)
+        }
+      } catch (err) {
+        console.warn('[MainStage] Search suggestions error:', err)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 350)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, guildId])
+
+  // Determine current playlist info defensively
   let title = 'Select a Playlist'
   let description = ''
   let creator = ''
@@ -69,47 +118,114 @@ export function MainStage({
   let isMix = false
 
   if (currentType === 'server-mix' && serverPlaylist) {
-    title = serverPlaylist.name
+    title = serverPlaylist.name || 'Untitled Server Mix'
     description = serverPlaylist.description || 'Collaborative Server Mix'
-    creator = `Created by ${serverPlaylist.createdBy.username}`
-    trackCount = serverPlaylist.tracks.length
+    creator = `Created by ${serverPlaylist.createdBy?.username || 'Member'}`
+    trackCount = Array.isArray(serverPlaylist.tracks) ? serverPlaylist.tracks.length : 0
     isMix = true
   } else if (currentType === 'spotify-playlist' && spotifyPlaylist) {
-    title = spotifyPlaylist.name
+    title = spotifyPlaylist.name || 'Spotify Playlist'
     description = spotifyPlaylist.description || 'Spotify Playlist'
-    creator = `By ${spotifyPlaylist.owner.display_name}`
-    trackCount = spotifyPlaylist.tracks.total
+    const ownerName = spotifyPlaylist.owner?.display_name || spotifyPlaylist.owner?.id || 'Spotify'
+    creator = `By ${ownerName}`
+    trackCount = spotifyPlaylist.tracks?.total ?? 0
     coverImage = spotifyPlaylist.images?.[0]?.url || null
   } else if (currentType === 'liked-songs') {
     title = 'Liked Songs'
     description = 'Your saved Spotify tracks'
     creator = 'Personal Spotify Library'
-    trackCount = likedTracks.length
+    trackCount = Array.isArray(likedTracks) ? likedTracks.length : 0
   }
 
-  const handleQuickAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchQuery.trim() || isAddingSearch) return
-
+  // Handle adding a specific resolved track (from suggestion click or Enter key)
+  const handleSelectSearchResult = async (track: SerializedTrack) => {
     setIsAddingSearch(true)
+    setShowDropdown(false)
     setStatusNotice(null)
-    const query = searchQuery.trim()
 
     try {
       if (isMix && onAddTrackToServerMix) {
         await onAddTrackToServerMix({
-          title: query,
-          author: 'Added via Search',
-          duration: '--:--',
-          durationMS: 0,
-          thumbnail: '',
-          url: query,
+          title: track.title,
+          author: track.author,
+          duration: track.duration,
+          durationMS: track.durationMS,
+          thumbnail: track.thumbnail,
+          url: track.url,
         })
-        setStatusNotice(`Added "${query}" to Server Mix!`)
+        setStatusNotice(`Added "${track.title}" to Server Mix!`)
       } else {
-        await onQueueTrack({ url: query, title: query })
-        setStatusNotice(`Queued "${query}" in Discord!`)
+        await onQueueTrack({ url: track.url, title: `${track.title} - ${track.author}` })
+        setStatusNotice(`Queued "${track.title}" in Discord!`)
       }
+      setSearchQuery('')
+      setTimeout(() => setStatusNotice(null), 4000)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to add song.'
+      setStatusNotice(msg)
+    } finally {
+      setIsAddingSearch(false)
+    }
+  }
+
+  const handleQuickAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const query = searchQuery.trim()
+    if (!query || isAddingSearch) return
+
+    setIsAddingSearch(true)
+    setShowDropdown(false)
+    setStatusNotice(null)
+
+    try {
+      // First, attempt to resolve via live search results or search API so real metadata is saved
+      let resolvedTrack: SerializedTrack | null = null
+      if (searchResults.length > 0) {
+        resolvedTrack = searchResults[0]
+      } else if (guildId) {
+        try {
+          const res = await fetch(`/api/music/${guildId}/search?query=${encodeURIComponent(query)}`)
+          if (res.ok) {
+            const data: SerializedTrack[] = await res.json()
+            if (data.length > 0) {
+              resolvedTrack = data[0]
+            }
+          }
+        } catch {
+          // Fall back to direct query
+        }
+      }
+
+      if (isMix && onAddTrackToServerMix) {
+        if (resolvedTrack) {
+          await onAddTrackToServerMix({
+            title: resolvedTrack.title,
+            author: resolvedTrack.author,
+            duration: resolvedTrack.duration,
+            durationMS: resolvedTrack.durationMS,
+            thumbnail: resolvedTrack.thumbnail,
+            url: resolvedTrack.url,
+          })
+          setStatusNotice(`Added "${resolvedTrack.title}" by ${resolvedTrack.author}!`)
+        } else {
+          // Backend PlaylistService will auto-resolve before saving to DB
+          await onAddTrackToServerMix({
+            title: query,
+            author: 'Added via Search',
+            duration: '--:--',
+            durationMS: 0,
+            thumbnail: '',
+            url: query,
+          })
+          setStatusNotice(`Added "${query}" to Server Mix!`)
+        }
+      } else {
+        const playUrl = resolvedTrack?.url || query
+        const playTitle = resolvedTrack ? `${resolvedTrack.title} - ${resolvedTrack.author}` : query
+        await onQueueTrack({ url: playUrl, title: playTitle })
+        setStatusNotice(`Queued "${playTitle}" in Discord!`)
+      }
+
       setSearchQuery('')
       setTimeout(() => setStatusNotice(null), 4000)
     } catch (err) {
@@ -122,21 +238,21 @@ export function MainStage({
 
   const handlePlayAllClick = async () => {
     if (isMix && serverPlaylist) {
-      const tracks = serverPlaylist.tracks.map((t) => ({
+      const tracks = (serverPlaylist.tracks || []).map((t) => ({
         url: t.url,
         title: `${t.title} - ${t.author}`,
       }))
       await onPlayAll(tracks)
     } else if (currentType === 'spotify-playlist') {
-      const tracks = spotifyTracks.map((t) => ({
-        url: t.external_urls.spotify,
-        title: `${t.name} - ${t.artists.map((a) => a.name).join(', ')}`,
+      const tracks = (spotifyTracks || []).map((t) => ({
+        url: t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`,
+        title: `${t.name} - ${(t.artists || []).map((a) => a.name).join(', ')}`,
       }))
       await onPlayAll(tracks)
     } else if (currentType === 'liked-songs') {
-      const tracks = likedTracks.map((t) => ({
-        url: t.external_urls.spotify,
-        title: `${t.name} - ${t.artists.map((a) => a.name).join(', ')}`,
+      const tracks = (likedTracks || []).map((t) => ({
+        url: t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`,
+        title: `${t.name} - ${(t.artists || []).map((a) => a.name).join(', ')}`,
       }))
       await onPlayAll(tracks)
     }
@@ -203,36 +319,99 @@ export function MainStage({
         </div>
       </div>
 
-      {/* SEARCH & QUICK ADD BAR */}
+      {/* SEARCH & QUICK ADD BAR WITH LIVE AUTOCOMPLETE */}
       <div className="p-6 pb-2">
-        <form onSubmit={handleQuickAdd} className="flex gap-2 max-w-2xl">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                isMix
-                  ? 'Add song title, artist, or YouTube/Spotify link to this Server Mix...'
-                  : 'Search or paste a link to play in Discord voice...'
-              }
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!searchQuery.trim() || isAddingSearch}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-xl transition-all disabled:opacity-40"
-          >
-            {isAddingSearch ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Plus className="w-3.5 h-3.5" />
-            )}
-            <span>{isMix ? 'Add to Mix' : 'Play in Voice'}</span>
-          </button>
-        </form>
+        <div ref={searchContainerRef} className="relative max-w-2xl">
+          <form onSubmit={handleQuickAdd} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onFocus={() => {
+                  if (searchResults.length > 0) setShowDropdown(true)
+                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  isMix
+                    ? 'Search song title, artist, or YouTube/Spotify link to add...'
+                    : 'Search or paste a link to play in Discord voice...'
+                }
+                className="w-full pl-10 pr-9 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
+              />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 animate-spin" />
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={!searchQuery.trim() || isAddingSearch}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-xl transition-all disabled:opacity-40 shrink-0"
+            >
+              {isAddingSearch ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
+              <span>{isMix ? 'Add to Mix' : 'Play in Voice'}</span>
+            </button>
+          </form>
+
+          {/* AUTOCOMPLETE DROPDOWN RESULTS */}
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#0e0e11] border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-30 max-h-80 overflow-y-auto divide-y divide-zinc-900">
+              <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider bg-zinc-950 flex items-center justify-between">
+                <span>Resolved Songs</span>
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <Sparkles className="w-3 h-3" />
+                  Instant Match
+                </span>
+              </div>
+              {searchResults.map((result, idx) => (
+                <div
+                  key={`${result.id || result.url}-${idx}`}
+                  className="p-2.5 hover:bg-zinc-900/90 flex items-center justify-between gap-3 transition-colors group cursor-pointer"
+                  onClick={() => handleSelectSearchResult(result)}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {result.thumbnail ? (
+                      <img
+                        src={result.thumbnail}
+                        alt={result.title}
+                        className="w-10 h-10 rounded-md object-cover ring-1 ring-zinc-800 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-md bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                        <Music className="w-4 h-4 text-zinc-500" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-white truncate group-hover:text-emerald-400 transition-colors">
+                        {result.title}
+                      </div>
+                      <div className="text-[11px] text-zinc-400 truncate">
+                        {result.author} {result.duration && `• ${result.duration}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleSelectSearchResult(result)
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-white text-zinc-300 hover:text-black text-[11px] font-medium transition-all"
+                    >
+                      {isMix ? 'Add' : 'Play'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {statusNotice && (
           <div className="mt-3 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 rounded-lg px-3 py-1.5 flex items-center justify-between max-w-2xl">
@@ -253,7 +432,7 @@ export function MainStage({
           </div>
         ) : isMix && serverPlaylist ? (
           /* SERVER PLAYLIST TRACKS */
-          serverPlaylist.tracks.length === 0 ? (
+          (serverPlaylist.tracks || []).length === 0 ? (
             <div className="py-16 text-center text-zinc-500 text-xs flex flex-col items-center gap-2 border border-dashed border-zinc-900 rounded-2xl">
               <Disc className="w-8 h-8 text-zinc-700" />
               <span>No songs in this Server Mix yet. Use the bar above to add some!</span>
@@ -273,85 +452,89 @@ export function MainStage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-900/60">
-                  {serverPlaylist.tracks.map((t, index) => (
-                    <tr
-                      key={t.id || index}
-                      className="group hover:bg-zinc-950/80 transition-colors"
-                    >
-                      <td className="py-3 px-3 text-center text-zinc-500 font-mono">
-                        <span className="group-hover:hidden">{index + 1}</span>
-                        <button
-                          onClick={() => onPlayTrack({ url: t.url, title: `${t.title} - ${t.author}` })}
-                          className="hidden group-hover:inline-block text-white hover:scale-110 transition-transform"
-                          title="Play now"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-white" />
-                        </button>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          {t.thumbnail ? (
-                            <img
-                              src={t.thumbnail}
-                              alt={t.title}
-                              className="w-9 h-9 rounded object-cover ring-1 ring-zinc-800 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-9 h-9 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
-                              <Music className="w-4 h-4 text-zinc-600" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="font-medium text-white truncate max-w-xs sm:max-w-md">
-                              {t.title}
-                            </div>
-                            <div className="text-[11px] text-zinc-400 truncate">{t.author}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 hidden md:table-cell text-zinc-400">
-                        <div className="flex items-center gap-1.5">
-                          {t.addedBy.avatar ? (
-                            <img
-                              src={t.addedBy.avatar}
-                              alt={t.addedBy.username}
-                              className="w-4 h-4 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full bg-zinc-800 text-[9px] flex items-center justify-center text-zinc-300">
-                              {t.addedBy.username.charAt(0)}
-                            </div>
-                          )}
-                          <span className="text-[11px] text-zinc-300 truncate max-w-[120px]">
-                            {t.addedBy.username}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono text-zinc-400">
-                        {t.duration || formatTime(t.durationMS)}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
+                  {(serverPlaylist.tracks || []).map((t, index) => {
+                    const adderName = t?.addedBy?.username || 'Member'
+                    const adderAvatar = t?.addedBy?.avatar
+                    return (
+                      <tr
+                        key={t.id || index}
+                        className="group hover:bg-zinc-950/80 transition-colors"
+                      >
+                        <td className="py-3 px-3 text-center text-zinc-500 font-mono">
+                          <span className="group-hover:hidden">{index + 1}</span>
                           <button
-                            onClick={() => onQueueTrack({ url: t.url, title: `${t.title} - ${t.author}` })}
-                            className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                            title="Add to up-next queue"
+                            onClick={() => onPlayTrack({ url: t.url, title: `${t.title} - ${t.author}` })}
+                            className="hidden group-hover:inline-block text-white hover:scale-110 transition-transform"
+                            title="Play now"
                           >
-                            <ListPlus className="w-3.5 h-3.5" />
+                            <Play className="w-3.5 h-3.5 fill-white" />
                           </button>
-                          {onDeleteServerTrack && (
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            {t.thumbnail ? (
+                              <img
+                                src={t.thumbnail}
+                                alt={t.title}
+                                className="w-9 h-9 rounded object-cover ring-1 ring-zinc-800 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                                <Music className="w-4 h-4 text-zinc-600" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="font-medium text-white truncate max-w-xs sm:max-w-md">
+                                {t.title}
+                              </div>
+                              <div className="text-[11px] text-zinc-400 truncate">{t.author}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden md:table-cell text-zinc-400">
+                          <div className="flex items-center gap-1.5">
+                            {adderAvatar ? (
+                              <img
+                                src={adderAvatar}
+                                alt={adderName}
+                                className="w-4 h-4 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-zinc-800 text-[9px] flex items-center justify-center text-zinc-300">
+                                {adderName.charAt(0)}
+                              </div>
+                            )}
+                            <span className="text-[11px] text-zinc-300 truncate max-w-[120px]">
+                              {adderName}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono text-zinc-400">
+                          {t.duration && t.duration !== '--:--' ? t.duration : (t.durationMS > 0 ? formatTime(t.durationMS) : '--:--')}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
                             <button
-                              onClick={() => onDeleteServerTrack(index)}
-                              className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-red-400 transition-colors"
-                              title="Remove from Server Mix"
+                              onClick={() => onQueueTrack({ url: t.url, title: `${t.title} - ${t.author}` })}
+                              className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                              title="Add to up-next queue"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <ListPlus className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {onDeleteServerTrack && (
+                              <button
+                                onClick={() => onDeleteServerTrack(index)}
+                                className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-red-400 transition-colors"
+                                title="Remove from Server Mix"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -359,7 +542,7 @@ export function MainStage({
         ) : (
           /* SPOTIFY PLAYLIST OR LIKED SONGS */
           (() => {
-            const tracksToDisplay = currentType === 'liked-songs' ? likedTracks : spotifyTracks
+            const tracksToDisplay = (currentType === 'liked-songs' ? likedTracks : spotifyTracks).filter(Boolean)
             return tracksToDisplay.length === 0 ? (
               <div className="py-16 text-center text-zinc-500 text-xs border border-dashed border-zinc-900 rounded-2xl">
                 No tracks found in this playlist.
@@ -381,7 +564,9 @@ export function MainStage({
                   <tbody className="divide-y divide-zinc-900/60">
                     {tracksToDisplay.map((track, index) => {
                       const albumImg = track.album?.images?.[0]?.url
-                      const artistNames = track.artists?.map((a) => a.name).join(', ') || 'Unknown Artist'
+                      const artistNames = (track.artists || []).map((a) => a.name).join(', ') || 'Unknown Artist'
+                      const spotifyUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`
+
                       return (
                         <tr
                           key={track.id || index}
@@ -392,7 +577,7 @@ export function MainStage({
                             <button
                               onClick={() =>
                                 onPlayTrack({
-                                  url: track.external_urls.spotify,
+                                  url: spotifyUrl,
                                   title: `${track.name} - ${artistNames}`,
                                 })
                               }
@@ -427,14 +612,14 @@ export function MainStage({
                             {track.album?.name || '-'}
                           </td>
                           <td className="py-3 px-4 text-right font-mono text-zinc-400">
-                            {formatTime(track.duration_ms)}
+                            {formatTime(track.duration_ms || 0)}
                           </td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={() =>
                                   onQueueTrack({
-                                    url: track.external_urls.spotify,
+                                    url: spotifyUrl,
                                     title: `${track.name} - ${artistNames}`,
                                   })
                                 }
@@ -444,7 +629,7 @@ export function MainStage({
                                 <ListPlus className="w-3.5 h-3.5" />
                               </button>
                               <a
-                                href={track.external_urls.spotify}
+                                href={spotifyUrl}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-[#1DB954] transition-colors"

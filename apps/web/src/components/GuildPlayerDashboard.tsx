@@ -346,6 +346,7 @@ export function GuildPlayerDashboard({ guildId, currentUserId }: GuildPlayerDash
 
         {/* PANEL 2: Main Center Stage */}
         <MainStage
+          guildId={guildId}
           currentType={currentType}
           serverPlaylist={selectedServerPlaylist}
           spotifyPlaylist={selectedSpotifyPlaylist}
