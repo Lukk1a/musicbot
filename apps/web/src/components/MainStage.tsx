@@ -128,7 +128,7 @@ export function MainStage({
     description = spotifyPlaylist.description || 'Spotify Playlist'
     const ownerName = spotifyPlaylist.owner?.display_name || spotifyPlaylist.owner?.id || 'Spotify'
     creator = `By ${ownerName}`
-    trackCount = spotifyPlaylist.tracks?.total ?? 0
+    trackCount = spotifyPlaylist.tracks?.total ?? spotifyPlaylist.items?.total ?? 0
     coverImage = spotifyPlaylist.images?.[0]?.url || null
   } else if (currentType === 'liked-songs') {
     title = 'Liked Songs'

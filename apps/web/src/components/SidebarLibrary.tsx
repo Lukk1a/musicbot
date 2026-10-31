@@ -252,7 +252,7 @@ export function SidebarLibrary({
                   {safeSpotifyPlaylists.map((pl) => {
                     const isSelected = selectedSpotifyPlaylist?.id === pl.id && !isLikedSongsSelected
                     const imgUrl = pl?.images?.[0]?.url
-                    const totalTracks = pl?.tracks?.total ?? 0
+                    const totalTracks = pl?.tracks?.total ?? pl?.items?.total ?? 0
                     const ownerName = pl?.owner?.display_name || pl?.owner?.id || 'Spotify'
 
                     return (
@@ -279,7 +279,7 @@ export function SidebarLibrary({
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-semibold truncate text-white">{pl.name || 'Untitled Playlist'}</div>
                           <div className="text-[11px] text-zinc-500 mt-0.5">
-                            {totalTracks} songs • {ownerName}
+                            {totalTracks} {totalTracks === 1 ? 'song' : 'songs'} • {ownerName}
                           </div>
                         </div>
                       </button>

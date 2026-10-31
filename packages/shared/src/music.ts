@@ -124,6 +124,7 @@ export interface SpotifyUserPlaylist {
   images: { url: string; height?: number; width?: number }[]
   owner: { display_name: string; id: string }
   tracks: { total: number }
+  items?: { total: number }
   external_urls: { spotify: string }
 }
 

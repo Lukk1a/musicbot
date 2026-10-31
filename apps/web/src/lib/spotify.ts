@@ -229,7 +229,24 @@ export async function getSpotifyUserPlaylists(
       const ownerId = String(rawOwner.id || '')
 
       const rawTracks = (pl.tracks && typeof pl.tracks === 'object') ? (pl.tracks as Record<string, unknown>) : {}
-      const totalTracks = typeof rawTracks.total === 'number' ? rawTracks.total : 0
+      const rawItemsObj = (pl.items && typeof pl.items === 'object') ? (pl.items as Record<string, unknown>) : {}
+
+      let totalTracks = 0
+      if (typeof rawItemsObj.total === 'number') {
+        totalTracks = rawItemsObj.total
+      } else if (typeof rawTracks.total === 'number') {
+        totalTracks = rawTracks.total
+      } else if (typeof pl.total_tracks === 'number') {
+        totalTracks = pl.total_tracks
+      } else if (typeof pl.item_count === 'number') {
+        totalTracks = pl.item_count
+      } else if (typeof pl.tracks === 'number') {
+        totalTracks = pl.tracks
+      } else if (rawItemsObj.total !== undefined && rawItemsObj.total !== null && !isNaN(Number(rawItemsObj.total))) {
+        totalTracks = Number(rawItemsObj.total)
+      } else if (rawTracks.total !== undefined && rawTracks.total !== null && !isNaN(Number(rawTracks.total))) {
+        totalTracks = Number(rawTracks.total)
+      }
 
       const rawUrls = (pl.external_urls && typeof pl.external_urls === 'object')
         ? (pl.external_urls as Record<string, unknown>)
@@ -248,6 +265,9 @@ export async function getSpotifyUserPlaylists(
         tracks: {
           total: totalTracks,
         },
+        items: {
+          total: totalTracks,
+        },
         external_urls: {
           spotify: spotifyUrl,
         },
@@ -262,8 +282,9 @@ export async function getSpotifyPlaylistTracks(
   accessToken: string,
   playlistId: string
 ): Promise<SpotifyTrackItem[]> {
-  const response = await fetch(
-    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`,
+  // Try /items first (2025/2026 Spotify Web API standard), fallback to /tracks
+  let response = await fetch(
+    `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -271,6 +292,18 @@ export async function getSpotifyPlaylistTracks(
       cache: 'no-store',
     }
   )
+
+  if (!response.ok) {
+    response = await fetch(
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: 'no-store',
+      }
+    )
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch playlist tracks (${response.status})`)
@@ -281,14 +314,16 @@ export async function getSpotifyPlaylistTracks(
   const tracks: SpotifyTrackItem[] = []
 
   for (const item of rawItems) {
-    if (item && typeof item === 'object' && item.track && typeof item.track === 'object') {
-      const t = item.track as Record<string, unknown>
-      const id = String(t.id || '')
+    if (item && typeof item === 'object') {
+      const rawTrack = (item.track || item.item) as Record<string, unknown> | undefined
+      if (!rawTrack || typeof rawTrack !== 'object') continue
+
+      const id = String(rawTrack.id || '')
       if (!id) continue
 
-      const name = String(t.name || 'Untitled Track')
-      const artists = Array.isArray(t.artists)
-        ? t.artists
+      const name = String(rawTrack.name || 'Untitled Track')
+      const artists = Array.isArray(rawTrack.artists)
+        ? rawTrack.artists
             .filter((a: unknown): a is { name?: string; id?: string } => Boolean(a && typeof a === 'object'))
             .map((a: { name?: string; id?: string }) => ({
               name: String(a.name || 'Unknown Artist'),
@@ -296,15 +331,15 @@ export async function getSpotifyPlaylistTracks(
             }))
         : []
 
-      const rawAlbum = (t.album && typeof t.album === 'object') ? (t.album as Record<string, unknown>) : {}
+      const rawAlbum = (rawTrack.album && typeof rawTrack.album === 'object') ? (rawTrack.album as Record<string, unknown>) : {}
       const albumImages = Array.isArray(rawAlbum.images)
         ? rawAlbum.images.filter((img: unknown): img is { url: string; height?: number; width?: number } =>
             Boolean(img && typeof img === 'object' && (img as { url?: string }).url)
           )
         : []
 
-      const rawUrls = (t.external_urls && typeof t.external_urls === 'object')
-        ? (t.external_urls as Record<string, unknown>)
+      const rawUrls = (rawTrack.external_urls && typeof rawTrack.external_urls === 'object')
+        ? (rawTrack.external_urls as Record<string, unknown>)
         : {}
 
       tracks.push({
@@ -315,11 +350,11 @@ export async function getSpotifyPlaylistTracks(
           name: String(rawAlbum.name || ''),
           images: albumImages,
         },
-        duration_ms: typeof t.duration_ms === 'number' ? t.duration_ms : 0,
+        duration_ms: typeof rawTrack.duration_ms === 'number' ? rawTrack.duration_ms : 0,
         external_urls: {
           spotify: String(rawUrls.spotify || `https://open.spotify.com/track/${id}`),
         },
-        uri: String(t.uri || `spotify:track:${id}`),
+        uri: String(rawTrack.uri || `spotify:track:${id}`),
       })
     }
   }
